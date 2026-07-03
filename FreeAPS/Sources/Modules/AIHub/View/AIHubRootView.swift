@@ -75,6 +75,8 @@ extension AIHub {
                 AIHubTherapyInsightsView()
             case .recap:
                 AIHubRecapView()
+            case .settingsAudit:
+                AIHubSettingsAuditView()
             case .presetDesigner:
                 AIHubPresetDesignerView()
             case .autoPresets:
@@ -182,6 +184,7 @@ private extension AIHub.Feature {
         case .mealSim: return hubT("sim.title")
         case .therapyInsights: return "Therapy Insights"
         case .recap: return "Recap"
+        case .settingsAudit: return "Loop Check"
         case .presetDesigner: return "Preset Designer"
         case .autoPresets: return "AutoPresets"
         }
@@ -193,6 +196,7 @@ private extension AIHub.Feature {
         case .mealSim: return hubT("root.card.sim.sub")
         case .therapyInsights: return hubT("root.card.insights.sub")
         case .recap: return hubT("root.card.recap.sub")
+        case .settingsAudit: return hubT("root.card.audit.sub")
         case .presetDesigner: return hubT("root.card.preset.sub")
         case .autoPresets: return hubT("root.card.auto.sub")
         }
@@ -204,6 +208,7 @@ private extension AIHub.Feature {
         case .mealSim: return "wand.and.stars"
         case .therapyInsights: return "chart.line.uptrend.xyaxis"
         case .recap: return "calendar.badge.clock"
+        case .settingsAudit: return "checkmark.shield.fill"
         case .presetDesigner: return "slider.horizontal.3"
         case .autoPresets: return "figure.walk.motion"
         }
@@ -215,6 +220,7 @@ private extension AIHub.Feature {
         case .mealSim: return .orange
         case .therapyInsights: return .blue
         case .recap: return .indigo
+        case .settingsAudit: return .green
         case .presetDesigner: return .pink
         case .autoPresets: return .teal
         }
@@ -228,7 +234,8 @@ private extension AIHub.Feature {
         case .chat,
              .mealSim,
              .presetDesigner,
-             .recap: return true
+             .recap,
+             .settingsAudit: return true
         case .autoPresets,
              .therapyInsights: return false
         }

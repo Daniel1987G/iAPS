@@ -10,6 +10,7 @@ enum AIHub {
         case mealSim
         case therapyInsights
         case recap
+        case settingsAudit
         case presetDesigner
         case autoPresets
 
