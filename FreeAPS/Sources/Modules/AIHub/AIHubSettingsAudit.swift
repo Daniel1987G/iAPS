@@ -13,6 +13,16 @@ import Foundation
 /// kann, die kein Detektor abdeckt. Die Einordnung wird pro Tag/Periode
 /// gecacht.
 ///
+/// Änderungs-Tracking (Richards Test-Feedback): Checks, deren Datenlage vom
+/// ALTEN Einstellungswert geprägt ist (Max IOB, Max Basal, Autosens, SMB,
+/// Schwelle), merken sich den zuletzt gesehenen Wert in UserDefaults.
+/// Ändert er sich, gilt 3 Tage Beobachtungsfenster („kürzlich geändert",
+/// neutral) und danach werden nur noch Daten SEIT der Änderung bewertet —
+/// sonst würde z. B. die Hypo-Quote aus der Zeit der alten Schwelle den
+/// Hinweis endlos weitertragen. DIA und Max COB vergleichen den aktuellen
+/// Wert direkt (reagieren sofort), Basal-Anteil ist strukturell — dort
+/// braucht es kein Tracking.
+///
 /// Die Checks prüfen, ob Einstellungen den Loop BREMSEN oder ihm
 /// widersprechen — Profil-Feintuning (Basal/ISF/CR pro Tageszeit) bleibt
 /// Sache von Therapy Insights.
@@ -45,28 +55,34 @@ enum AIHubSettingsAudit {
         let isMmol: Bool
     }
 
+    private typealias Cycle = (date: Date, glucose: Double, iob: Double, ratio: Double, rate: Double, smb: Double)
+    private typealias Reading = (date: Date, glucose: Int)
+
     // MARK: - Analyse (synchron, off-main aufrufen)
 
     static func analyze(days: Int) -> Result {
         let context = CoreDataStack.shared.persistentContainer.newBackgroundContext()
         let cutoff = Date().addingTimeInterval(-Double(days) * 24 * 3600)
 
-        var readings: [Int] = []
-        var cycles: [(glucose: Double, iob: Double, ratio: Double, rate: Double, smb: Double)] = []
+        var readings: [Reading] = []
+        var cycles: [Cycle] = []
         var tddByDay: [Date: Double] = [:]
         var meals: [(date: Date, carbs: Double)] = []
 
         context.performAndWait {
             let readingsReq = NSFetchRequest<Readings>(entityName: "Readings")
             readingsReq.predicate = NSPredicate(format: "date >= %@", cutoff as NSDate)
-            readings = ((try? context.fetch(readingsReq)) ?? []).map { Int($0.glucose) }
+            readings = ((try? context.fetch(readingsReq)) ?? [])
+                .compactMap { row in row.date.map { ($0, Int(row.glucose)) } }
 
             let reasonsReq = NSFetchRequest<Reasons>(entityName: "Reasons")
             reasonsReq.predicate = NSPredicate(format: "date >= %@", cutoff as NSDate)
             reasonsReq.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
             let calendar = Calendar.current
             for row in (try? context.fetch(reasonsReq)) ?? [] {
+                guard let date = row.date else { continue }
                 cycles.append((
+                    date: date,
                     glucose: row.glucose?.doubleValue ?? 0,
                     iob: row.iob?.doubleValue ?? 0,
                     ratio: row.ratio?.doubleValue ?? 1,
@@ -74,7 +90,7 @@ enum AIHubSettingsAudit {
                     smb: row.smb?.doubleValue ?? 0
                 ))
                 // TDD: letzter Wert pro Tag (rollierender 24h-Wert), wie Recap
-                if let date = row.date, let tdd = row.tdd?.doubleValue, tdd > 0 {
+                if let tdd = row.tdd?.doubleValue, tdd > 0 {
                     tddByDay[calendar.startOfDay(for: date)] = tdd
                 }
             }
@@ -131,25 +147,72 @@ enum AIHubSettingsAudit {
         )
     }
 
+    // MARK: - Änderungs-Tracking
+
+    /// Beobachtungsfenster nach einer Einstellungsänderung: solange läuft
+    /// der Check neutral („kürzlich geändert"), danach zählen nur Daten
+    /// seit der Änderung.
+    private static let settleInterval: TimeInterval = 3 * 24 * 3600
+
+    /// Seit wann der aktuelle Wert dieser Einstellung aktiv ist. Merkt sich
+    /// den zuletzt gesehenen Wert in UserDefaults; bei der ERSTEN Beobachtung
+    /// gilt der Wert als „schon immer aktiv" (distantPast), sonst würde jede
+    /// Neuinstallation alle Checks drei Tage stilllegen.
+    private static func activeSince(key: String, value: String) -> Date {
+        let defaults = UserDefaults.standard
+        let valueKey = "iAPS.aiHubAudit.\(key).value"
+        let dateKey = "iAPS.aiHubAudit.\(key).date"
+        if defaults.string(forKey: valueKey) == value {
+            return (defaults.object(forKey: dateKey) as? Date) ?? .distantPast
+        }
+        let since: Date = defaults.string(forKey: valueKey) == nil ? .distantPast : Date()
+        defaults.set(value, forKey: valueKey)
+        defaults.set(since, forKey: dateKey)
+        return since
+    }
+
+    private static func isSettling(_ since: Date) -> Bool {
+        Date().timeIntervalSince(since) < settleInterval
+    }
+
+    private static func recentFinding(title: String) -> Finding {
+        Finding(severity: .ok, title: title, detail: hubT("audit.recent"))
+    }
+
+    /// Fakten-Zusatz, wenn nur Daten seit einer Änderung bewertet wurden.
+    private static func sinceNote(_ since: Date) -> String {
+        guard since > .distantPast else { return "" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return " (setting changed on \(formatter.string(from: since)); only data since then evaluated)"
+    }
+
     // MARK: - Checks
 
     /// Max IOB: 0 legt SMBs/Extra-Insulin komplett still; sonst zählt der
     /// Anteil der Hoch-BG-Zyklen (> 180), in denen das IOB an der Kappe lag.
     private static func maxIOBCheck(
-        cycles: [(glucose: Double, iob: Double, ratio: Double, rate: Double, smb: Double)],
+        cycles: [Cycle],
         preferences: Preferences,
         facts: inout [String]
     ) -> Finding {
         let maxIOB = Double(truncating: preferences.maxIOB as NSNumber)
         let title = hubT("audit.maxiob.title")
+        let maxIOBText = trimmed(maxIOB)
+
+        let since = activeSince(key: "maxiob", value: maxIOBText)
+        if isSettling(since) {
+            facts.append("max_iob was changed to \(maxIOBText) U less than 3 days ago — no assessment yet.")
+            return recentFinding(title: title)
+        }
 
         guard maxIOB > 0 else {
             facts.append("max_iob is 0: the loop can only reduce basal, it never adds insulin above the profile basal.")
             return Finding(severity: .warn, title: title, detail: hubT("audit.maxiob.zero"))
         }
 
-        let maxIOBText = trimmed(maxIOB)
-        let highCycles = cycles.filter { $0.glucose > 180 }
+        let highCycles = cycles.filter { $0.date >= since && $0.glucose > 180 }
         guard highCycles.count >= 20 else {
             facts.append("max_iob \(maxIOBText) U: too few high-glucose cycles to judge (no problem visible).")
             return Finding(severity: .ok, title: title, detail: hubT("audit.maxiob.ok", maxIOBText))
@@ -159,7 +222,7 @@ enum AIHubSettingsAudit {
         let share = Int((Double(capped) / Double(highCycles.count) * 100).rounded())
         facts.append(
             "max_iob \(maxIOBText) U: in \(share)% of high-glucose loop cycles (>180 mg/dL) " +
-                "IOB was at >=90% of the cap (\(capped) of \(highCycles.count) cycles)."
+                "IOB was at >=90% of the cap (\(capped) of \(highCycles.count) cycles)." + sinceNote(since)
         )
         if share >= 30 {
             return Finding(severity: .warn, title: title, detail: hubT("audit.maxiob.capped", share, maxIOBText))
@@ -173,7 +236,7 @@ enum AIHubSettingsAudit {
     /// Max Basal: Anteil der Hoch-BG-Zyklen, in denen die Temp-Basal am
     /// Pumpen-Deckel lief — der Loop wollte mehr geben, durfte aber nicht.
     private static func maxBasalCheck(
-        cycles: [(glucose: Double, iob: Double, ratio: Double, rate: Double, smb: Double)],
+        cycles: [Cycle],
         pump: PumpSettings,
         facts: inout [String]
     ) -> Finding {
@@ -181,7 +244,13 @@ enum AIHubSettingsAudit {
         let title = hubT("audit.maxbasal.title")
         let maxBasalText = trimmed(maxBasal)
 
-        let highCycles = cycles.filter { $0.glucose > 180 }
+        let since = activeSince(key: "maxbasal", value: maxBasalText)
+        if isSettling(since) {
+            facts.append("maxBasal was changed to \(maxBasalText) U/h less than 3 days ago — no assessment yet.")
+            return recentFinding(title: title)
+        }
+
+        let highCycles = cycles.filter { $0.date >= since && $0.glucose > 180 }
         guard maxBasal > 0, highCycles.count >= 20 else {
             facts.append("maxBasal \(maxBasalText) U/h: too few high-glucose cycles to judge (no problem visible).")
             return Finding(severity: .ok, title: title, detail: hubT("audit.maxbasal.ok", maxBasalText))
@@ -191,7 +260,7 @@ enum AIHubSettingsAudit {
         let share = Int((Double(capped) / Double(highCycles.count) * 100).rounded())
         facts.append(
             "maxBasal \(maxBasalText) U/h: in \(share)% of high-glucose cycles the temp basal " +
-                "ran at >=95% of the pump ceiling (\(capped) of \(highCycles.count) cycles)."
+                "ran at >=95% of the pump ceiling (\(capped) of \(highCycles.count) cycles)." + sinceNote(since)
         )
         if share >= 30 {
             return Finding(severity: .warn, title: title, detail: hubT("audit.maxbasal.capped", share, maxBasalText))
@@ -205,7 +274,7 @@ enum AIHubSettingsAudit {
     /// Autosens/Dynamische Ratio dauerhaft am Limit = das Grundprofil ist
     /// systematisch zu schwach/zu stark und der Algorithmus kompensiert nur.
     private static func autosensCheck(
-        cycles: [(glucose: Double, iob: Double, ratio: Double, rate: Double, smb: Double)],
+        cycles: [Cycle],
         preferences: Preferences,
         facts: inout [String]
     ) -> Finding {
@@ -215,13 +284,26 @@ enum AIHubSettingsAudit {
         let maxText = trimmed(maxRatio)
         let minText = trimmed(minRatio)
 
-        let pinnedHigh = cycles.filter { $0.ratio >= maxRatio - 0.01 }.count
-        let pinnedLow = cycles.filter { $0.ratio <= minRatio + 0.01 }.count
-        let highShare = Int((Double(pinnedHigh) / Double(cycles.count) * 100).rounded())
-        let lowShare = Int((Double(pinnedLow) / Double(cycles.count) * 100).rounded())
+        let since = activeSince(key: "autosens", value: "\(minText)|\(maxText)")
+        if isSettling(since) {
+            facts.append("autosens_min/autosens_max were changed less than 3 days ago — no assessment yet.")
+            return recentFinding(title: title)
+        }
+
+        let relevant = cycles.filter { $0.date >= since }
+        guard relevant.count >= 100 else {
+            facts.append("autosens limits: too few loop cycles since the last change — no assessment yet.")
+            return recentFinding(title: title)
+        }
+
+        let pinnedHigh = relevant.filter { $0.ratio >= maxRatio - 0.01 }.count
+        let pinnedLow = relevant.filter { $0.ratio <= minRatio + 0.01 }.count
+        let highShare = Int((Double(pinnedHigh) / Double(relevant.count) * 100).rounded())
+        let lowShare = Int((Double(pinnedLow) / Double(relevant.count) * 100).rounded())
         facts.append(
             "autosens/dynamic ratio pinned at upper limit (autosens_max \(maxText)) in \(highShare)% " +
-                "and at lower limit (autosens_min \(minText)) in \(lowShare)% of \(cycles.count) loop cycles."
+                "and at lower limit (autosens_min \(minText)) in \(lowShare)% of \(relevant.count) loop cycles." +
+                sinceNote(since)
         )
 
         if highShare >= 35 {
@@ -243,8 +325,8 @@ enum AIHubSettingsAudit {
     /// ist die klassische Bremse; UAM aus bei unvollständigem Carb-Logging
     /// verschenkt die Reaktion auf unangekündigte Mahlzeiten.
     private static func smbCheck(
-        cycles: [(glucose: Double, iob: Double, ratio: Double, rate: Double, smb: Double)],
-        readings: [Int],
+        cycles: [Cycle],
+        readings: [Reading],
         preferences: Preferences,
         facts: inout [String]
     ) -> Finding {
@@ -252,20 +334,43 @@ enum AIHubSettingsAudit {
         let smbEnabled = preferences.enableSMBAlways || preferences.enableSMBWithCOB ||
             preferences.enableSMBWithTemptarget || preferences.enableSMBAfterCarbs ||
             preferences.enableSMB_high_bg
-        let aboveShare = Int((Double(readings.filter { $0 > 180 }.count) / Double(readings.count) * 100).rounded())
+
+        let signature = [
+            preferences.enableSMBAlways, preferences.enableSMBWithCOB,
+            preferences.enableSMBWithTemptarget, preferences.enableSMBAfterCarbs,
+            preferences.enableSMB_high_bg, preferences.enableUAM
+        ].map { $0 ? "1" : "0" }.joined()
+        let since = activeSince(key: "smb", value: signature)
+        if isSettling(since) {
+            facts.append("SMB/UAM switches were changed less than 3 days ago — no assessment yet.")
+            return recentFinding(title: title)
+        }
+
+        let relevantReadings = readings.filter { $0.date >= since }
+        guard relevantReadings.count >= 100 else {
+            facts.append("SMB/UAM: too few readings since the last change — no assessment yet.")
+            return recentFinding(title: title)
+        }
+        let aboveShare = Int(
+            (Double(relevantReadings.filter { $0.glucose > 180 }.count) / Double(relevantReadings.count) * 100)
+                .rounded()
+        )
 
         guard smbEnabled else {
-            facts.append("All SMB switches are off. Time above 180 mg/dL: \(aboveShare)%.")
+            facts.append("All SMB switches are off. Time above 180 mg/dL: \(aboveShare)%." + sinceNote(since))
             if aboveShare > 25 {
                 return Finding(severity: .warn, title: title, detail: hubT("audit.smb.off.high", aboveShare))
             }
             return Finding(severity: .info, title: title, detail: hubT("audit.smb.off"))
         }
 
-        let usage = Int((Double(cycles.filter { $0.smb > 0 }.count) / Double(cycles.count) * 100).rounded())
+        let relevantCycles = cycles.filter { $0.date >= since }
+        let usage = relevantCycles.isEmpty
+            ? 0
+            : Int((Double(relevantCycles.filter { $0.smb > 0 }.count) / Double(relevantCycles.count) * 100).rounded())
         facts.append(
             "SMBs are enabled and were delivered in \(usage)% of loop cycles. " +
-                "enableUAM: \(preferences.enableUAM). Time above 180 mg/dL: \(aboveShare)%."
+                "enableUAM: \(preferences.enableUAM). Time above 180 mg/dL: \(aboveShare)%." + sinceNote(since)
         )
         if !preferences.enableUAM, !UserDefaults.standard.aiHubCarbsComplete {
             return Finding(severity: .info, title: title, detail: hubT("audit.smb.uam"))
@@ -274,7 +379,8 @@ enum AIHubSettingsAudit {
     }
 
     /// DIA unter 5 h unterschätzt das IOB moderner Analoga (Stacking-Gefahr);
-    /// die bilineare Kurve ist ein Altlast-Modell.
+    /// die bilineare Kurve ist ein Altlast-Modell. Vergleicht nur aktuelle
+    /// Werte — reagiert sofort auf Änderungen, kein Tracking nötig.
     private static func diaCheck(
         pump: PumpSettings,
         preferences: Preferences,
@@ -296,6 +402,8 @@ enum AIHubSettingsAudit {
 
     /// Max COB gegen die größte geloggte Mahlzeit (Einträge < 90 min
     /// zusammengefasst, wie die CR-Engine): gekappte Carbs = spätes Insulin.
+    /// Vergleicht die aktuelle Kappe mit dem Essverhalten — reagiert sofort
+    /// auf Änderungen, kein Tracking nötig.
     private static func maxCOBCheck(
         meals: [(date: Date, carbs: Double)],
         preferences: Preferences,
@@ -357,8 +465,10 @@ enum AIHubSettingsAudit {
 
     /// Sicherheits-Schwelle (threshold_setting) gegen die reale Hypo-Quote:
     /// bei häufigen Hypos schneidet eine höhere Schwelle das Insulin früher ab.
+    /// Bewertet nur Messwerte seit der letzten Schwellen-Änderung — die
+    /// Hypo-Quote davor entstand unter der alten Schwelle.
     private static func thresholdCheck(
-        readings: [Int],
+        readings: [Reading],
         preferences: Preferences,
         isMmol: Bool,
         facts: inout [String]
@@ -366,11 +476,27 @@ enum AIHubSettingsAudit {
         let threshold = Double(truncating: preferences.threshold_setting as NSNumber)
         let title = hubT("audit.threshold.title")
         let thresholdText = AIHubTherapyAnalysis.formatGlucose(threshold, isMmol: isMmol)
-        let lowShare = Double(readings.filter { $0 < 70 }.count) / Double(readings.count) * 100
+
+        let since = activeSince(key: "threshold", value: trimmed(threshold))
+        if isSettling(since) {
+            facts.append(
+                "threshold_setting was changed to \(trimmed(threshold)) mg/dL less than 3 days ago — " +
+                    "no assessment yet."
+            )
+            return recentFinding(title: title)
+        }
+
+        let relevant = readings.filter { $0.date >= since }
+        guard relevant.count >= 100 else {
+            facts.append("threshold_setting: too few readings since the last change — no assessment yet.")
+            return recentFinding(title: title)
+        }
+
+        let lowShare = Double(relevant.filter { $0.glucose < 70 }.count) / Double(relevant.count) * 100
         let lowText = String(format: "%.1f", lowShare)
         facts.append(
             "Safety threshold (threshold_setting) \(trimmed(threshold)) mg/dL, " +
-                "time below 70 mg/dL: \(lowText)%."
+                "time below 70 mg/dL: \(lowText)%." + sinceNote(since)
         )
 
         if lowShare > 4 {

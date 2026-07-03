@@ -73,6 +73,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "AI checks your oref settings against your real data.",
         "audit.toolittle": "Not enough loop data in the selected period for the checks.",
+        "audit.recent": "This setting was changed recently — not enough data since the change to judge yet.",
         "audit.nokey": "The AI assessment needs an API key (AI Hub settings). The checks above work without one.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Note",
@@ -110,7 +111,7 @@ enum AIHubL10n {
         "audit.basalshare.low": "Basal is only %d%% of your daily insulin (TDD %@ U) — boluses and corrections carry the day; the basal profile may be too weak.",
         "audit.basalshare.ok": "Basal share of TDD: %d%% — within the typical range.",
         "audit.threshold.title": "Safety threshold",
-        "audit.threshold.hypos": "%@%% of readings were below 70 while the safety threshold is %@ — a higher threshold makes the loop cut insulin earlier.",
+        "audit.threshold.hypos": "%@%% of readings were below 70 while the safety threshold is %@ — a higher threshold makes the loop reduce insulin earlier.",
         "audit.threshold.ok": "Safety threshold (%@) and hypo rate (%@%% below 70) fit together.",
         // UIUX settings (own keys, not covered by Crowdin)
         "uiux.chart.basalRate": "Display Basal Rate in Chart",
@@ -434,6 +435,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "KI prüft deine oref-Einstellungen gegen deine echten Daten.",
         "audit.toolittle": "Zu wenig Loop-Daten im gewählten Zeitraum für die Checks.",
+        "audit.recent": "Diese Einstellung wurde kürzlich geändert — seit der Änderung gibt es noch zu wenig Daten für eine Bewertung.",
         "audit.nokey": "Für die KI-Einordnung wird ein API-Key benötigt (AI-Hub-Einstellungen). Die Checks oben funktionieren auch ohne.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Hinweis",
@@ -471,7 +473,7 @@ enum AIHubL10n {
         "audit.basalshare.low": "Basal macht nur %d%% deines Tagesinsulins aus (TDD %@ U) — Boli und Korrekturen tragen den Tag; das Basalprofil könnte zu schwach sein.",
         "audit.basalshare.ok": "Basal-Anteil am TDD: %d%% — im typischen Bereich.",
         "audit.threshold.title": "Sicherheits-Schwelle",
-        "audit.threshold.hypos": "%@%% der Messwerte lagen unter 70, während die Sicherheits-Schwelle bei %@ liegt — eine höhere Schwelle lässt den Loop früher Insulin wegnehmen.",
+        "audit.threshold.hypos": "%@%% der Messwerte lagen unter 70, während die Sicherheits-Schwelle bei %@ liegt — eine höhere Schwelle lässt den Loop das Insulin früher reduzieren.",
         "audit.threshold.ok": "Sicherheits-Schwelle (%@) und Hypo-Quote (%@%% unter 70) passen zusammen.",
         // UIUX-Einstellungen (eigene Keys, nicht in Crowdin)
         "uiux.chart.basalRate": "Basalrate im Diagramm anzeigen",
@@ -788,6 +790,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "L'IA compare tes réglages oref à tes données réelles.",
         "audit.toolittle": "Pas assez de données de boucle sur la période choisie pour les contrôles.",
+        "audit.recent": "Ce réglage a été modifié récemment — pas encore assez de données depuis le changement pour juger.",
         "audit.nokey": "L'analyse IA nécessite une clé API (réglages AI Hub). Les contrôles ci-dessus fonctionnent sans.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Remarque",
@@ -825,7 +828,7 @@ enum AIHubL10n {
         "audit.basalshare.low": "Le basal ne représente que %d%% de ton insuline quotidienne (TDD %@ U) — bolus et corrections portent la journée ; le profil basal est peut-être trop faible.",
         "audit.basalshare.ok": "Part du basal dans la TDD : %d%% — dans la plage typique.",
         "audit.threshold.title": "Seuil de sécurité",
-        "audit.threshold.hypos": "%@%% des mesures étaient sous 70 alors que le seuil de sécurité est à %@ — un seuil plus haut fait couper l'insuline plus tôt.",
+        "audit.threshold.hypos": "%@%% des mesures étaient sous 70 alors que le seuil de sécurité est à %@ — un seuil plus haut fait réduire l'insuline plus tôt.",
         "audit.threshold.ok": "Le seuil de sécurité (%@) et le taux d'hypos (%@%% sous 70) sont cohérents.",
         "aur.pump.grace": "Tolérance %@",
         // Réglages UIUX (clés propres, absentes de Crowdin)
@@ -1136,6 +1139,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "L'IA confronta le tue impostazioni oref con i tuoi dati reali.",
         "audit.toolittle": "Dati del loop insufficienti nel periodo scelto per i controlli.",
+        "audit.recent": "Questa impostazione è stata modificata di recente — dati ancora insufficienti dalla modifica per una valutazione.",
         "audit.nokey": "La valutazione IA richiede una chiave API (impostazioni AI Hub). I controlli sopra funzionano anche senza.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Nota",
@@ -1484,6 +1488,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "La IA revisa tus ajustes de oref frente a tus datos reales.",
         "audit.toolittle": "No hay suficientes datos del loop en el periodo elegido para las comprobaciones.",
+        "audit.recent": "Este ajuste se cambió hace poco — aún no hay datos suficientes desde el cambio para valorarlo.",
         "audit.nokey": "La valoración con IA necesita una clave API (ajustes de AI Hub). Las comprobaciones de arriba funcionan sin ella.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Nota",
@@ -1832,6 +1837,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "AI toetst je oref-instellingen aan je echte gegevens.",
         "audit.toolittle": "Te weinig loopgegevens in de gekozen periode voor de controles.",
+        "audit.recent": "Deze instelling is onlangs gewijzigd — nog te weinig gegevens sinds de wijziging om te beoordelen.",
         "audit.nokey": "De AI-beoordeling heeft een API-sleutel nodig (AI Hub-instellingen). De controles hierboven werken ook zonder.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Opmerking",
@@ -1869,7 +1875,7 @@ enum AIHubL10n {
         "audit.basalshare.low": "Basaal is maar %d%% van je dagelijkse insuline (TDD %@ U) — bolussen en correcties dragen de dag; het basaalprofiel kan te zwak zijn.",
         "audit.basalshare.ok": "Basaalaandeel van TDD: %d%% — binnen het gebruikelijke bereik.",
         "audit.threshold.title": "Veiligheidsdrempel",
-        "audit.threshold.hypos": "%@%% van de metingen lag onder 70 terwijl de veiligheidsdrempel %@ is — een hogere drempel laat de loop eerder insuline wegnemen.",
+        "audit.threshold.hypos": "%@%% van de metingen lag onder 70 terwijl de veiligheidsdrempel %@ is — een hogere drempel laat de loop de insuline eerder verminderen.",
         "audit.threshold.ok": "Veiligheidsdrempel (%@) en hypopercentage (%@%% onder 70) passen bij elkaar.",
         "aur.pump.grace": "Marge %@",
         // UIUX-instellingen (eigen sleutels, niet in Crowdin)
@@ -2180,6 +2186,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "AI sprawdza twoje ustawienia oref na tle rzeczywistych danych.",
         "audit.toolittle": "Za mało danych pętli w wybranym okresie, aby wykonać kontrole.",
+        "audit.recent": "To ustawienie zostało niedawno zmienione — od zmiany jest jeszcze za mało danych do oceny.",
         "audit.nokey": "Ocena AI wymaga klucza API (ustawienia AI Hub). Powyższe kontrole działają bez niego.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Uwaga",
@@ -2528,6 +2535,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "AI granskar dina oref-inställningar mot dina verkliga data.",
         "audit.toolittle": "För lite loopdata i den valda perioden för kontrollerna.",
+        "audit.recent": "Den här inställningen ändrades nyligen — ännu för lite data sedan ändringen för en bedömning.",
         "audit.nokey": "AI-bedömningen kräver en API-nyckel (AI Hub-inställningar). Kontrollerna ovan fungerar utan.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Notering",
@@ -2876,6 +2884,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "AI tjekker dine oref-indstillinger mod dine faktiske data.",
         "audit.toolittle": "For få loopdata i den valgte periode til kontrollerne.",
+        "audit.recent": "Denne indstilling blev ændret for nylig — endnu for få data siden ændringen til en vurdering.",
         "audit.nokey": "AI-vurderingen kræver en API-nøgle (AI Hub-indstillinger). Kontrollerne ovenfor virker uden.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Bemærkning",
@@ -3224,6 +3233,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "AI sjekker oref-innstillingene dine mot dine faktiske data.",
         "audit.toolittle": "For lite loopdata i valgt periode til kontrollene.",
+        "audit.recent": "Denne innstillingen ble nylig endret — ennå for lite data siden endringen til å vurdere.",
         "audit.nokey": "AI-vurderingen krever en API-nøkkel (AI Hub-innstillinger). Kontrollene ovenfor fungerer uten.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Merknad",
@@ -3572,6 +3582,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "Tekoäly vertaa oref-asetuksiasi todellisiin tietoihisi.",
         "audit.toolittle": "Valitulla jaksolla on liian vähän loop-dataa tarkistuksiin.",
+        "audit.recent": "Tätä asetusta muutettiin äskettäin — muutoksen jälkeen on vielä liian vähän dataa arviointiin.",
         "audit.nokey": "Tekoälyarvio vaatii API-avaimen (AI Hub -asetukset). Yllä olevat tarkistukset toimivat ilmankin.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Huomio",
@@ -3920,6 +3931,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "A IA compara as tuas definições oref com os teus dados reais.",
         "audit.toolittle": "Dados do loop insuficientes no período escolhido para as verificações.",
+        "audit.recent": "Esta definição foi alterada há pouco — ainda não há dados suficientes desde a alteração para avaliar.",
         "audit.nokey": "A avaliação por IA precisa de uma chave API (definições do AI Hub). As verificações acima funcionam sem ela.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Nota",
@@ -4268,6 +4280,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "A IA compara suas configurações oref com seus dados reais.",
         "audit.toolittle": "Dados do loop insuficientes no período escolhido para as verificações.",
+        "audit.recent": "Esta configuração foi alterada há pouco — ainda não há dados suficientes desde a mudança para avaliar.",
         "audit.nokey": "A avaliação por IA precisa de uma chave API (configurações do AI Hub). As verificações acima funcionam sem ela.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Nota",
@@ -4616,6 +4629,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "ИИ сверяет ваши настройки oref с вашими реальными данными.",
         "audit.toolittle": "Недостаточно данных петли за выбранный период для проверок.",
+        "audit.recent": "Эта настройка была недавно изменена — с момента изменения ещё слишком мало данных для оценки.",
         "audit.nokey": "Для оценки ИИ нужен API-ключ (настройки AI Hub). Проверки выше работают и без него.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Заметка",
@@ -4964,6 +4978,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "YZ, oref ayarlarını gerçek verilerinle karşılaştırır.",
         "audit.toolittle": "Seçilen dönemde kontroller için yeterli döngü verisi yok.",
+        "audit.recent": "Bu ayar kısa süre önce değiştirildi — değişiklikten bu yana değerlendirme için henüz yeterli veri yok.",
         "audit.nokey": "YZ değerlendirmesi bir API anahtarı gerektirir (AI Hub ayarları). Yukarıdaki kontroller anahtarsız da çalışır.",
         "audit.sev.ok": "Tamam",
         "audit.sev.info": "Not",
@@ -5312,6 +5327,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "ШІ звіряє ваші налаштування oref із вашими реальними даними.",
         "audit.toolittle": "Замало даних петлі за обраний період для перевірок.",
+        "audit.recent": "Це налаштування нещодавно змінено — від зміни ще замало даних для оцінки.",
         "audit.nokey": "Для оцінки ШІ потрібен API-ключ (налаштування AI Hub). Перевірки вище працюють і без нього.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Примітка",
@@ -5660,6 +5676,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "AI porovná tvoje nastavenia oref s tvojimi skutočnými údajmi.",
         "audit.toolittle": "Za zvolené obdobie je na kontroly príliš málo údajov slučky.",
+        "audit.recent": "Toto nastavenie bolo nedávno zmenené — od zmeny je zatiaľ príliš málo údajov na hodnotenie.",
         "audit.nokey": "Hodnotenie AI vyžaduje API kľúč (nastavenia AI Hub). Kontroly vyššie fungujú aj bez neho.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Poznámka",
@@ -6008,6 +6025,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "Az MI a valós adataiddal veti össze az oref-beállításaidat.",
         "audit.toolittle": "A kiválasztott időszakban túl kevés loop-adat van az ellenőrzésekhez.",
+        "audit.recent": "Ezt a beállítást nemrég módosították — a változtatás óta még túl kevés az adat az értékeléshez.",
         "audit.nokey": "Az MI-értékeléshez API-kulcs kell (AI Hub beállítások). A fenti ellenőrzések anélkül is működnek.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Megjegyzés",
@@ -6356,6 +6374,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "يفحص الذكاء الاصطناعي إعدادات oref لديك مقابل بياناتك الفعلية.",
         "audit.toolittle": "لا توجد بيانات حلقة كافية في الفترة المختارة لإجراء الفحوصات.",
+        "audit.recent": "تم تغيير هذا الإعداد مؤخراً — لا توجد بيانات كافية منذ التغيير للحكم بعد.",
         "audit.nokey": "يتطلب تقييم الذكاء الاصطناعي مفتاح API (إعدادات AI Hub). الفحوصات أعلاه تعمل بدونه.",
         "audit.sev.ok": "حسناً",
         "audit.sev.info": "ملاحظة",
@@ -6704,6 +6723,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "הבינה המלאכותית בודקת את הגדרות oref שלך מול הנתונים האמיתיים שלך.",
         "audit.toolittle": "אין מספיק נתוני לולאה בתקופה שנבחרה עבור הבדיקות.",
+        "audit.recent": "הגדרה זו שונתה לאחרונה — אין עדיין מספיק נתונים מאז השינוי כדי להעריך.",
         "audit.nokey": "הערכת הבינה המלאכותית דורשת מפתח API (הגדרות AI Hub). הבדיקות למעלה עובדות גם בלעדיו.",
         "audit.sev.ok": "תקין",
         "audit.sev.info": "הערה",
@@ -7052,6 +7072,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "Η ΤΝ ελέγχει τις ρυθμίσεις oref σε σχέση με τα πραγματικά σου δεδομένα.",
         "audit.toolittle": "Πολύ λίγα δεδομένα βρόχου στην επιλεγμένη περίοδο για τους ελέγχους.",
+        "audit.recent": "Αυτή η ρύθμιση άλλαξε πρόσφατα — δεν υπάρχουν ακόμη αρκετά δεδομένα από την αλλαγή για αξιολόγηση.",
         "audit.nokey": "Η αξιολόγηση ΤΝ χρειάζεται κλειδί API (ρυθμίσεις AI Hub). Οι παραπάνω έλεγχοι λειτουργούν και χωρίς αυτό.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Σημείωση",
@@ -7400,6 +7421,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "La IA revisa els teus ajustos d'oref amb les teves dades reals.",
         "audit.toolittle": "No hi ha prou dades del loop en el període triat per a les comprovacions.",
+        "audit.recent": "Aquest ajust s'ha canviat fa poc — encara no hi ha prou dades des del canvi per valorar-lo.",
         "audit.nokey": "La valoració amb IA necessita una clau API (ajustos de l'AI Hub). Les comprovacions de dalt funcionen sense.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Nota",
@@ -7748,6 +7770,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "AI đối chiếu cài đặt oref của bạn với dữ liệu thực tế.",
         "audit.toolittle": "Không đủ dữ liệu vòng lặp trong khoảng thời gian đã chọn để kiểm tra.",
+        "audit.recent": "Cài đặt này vừa được thay đổi — chưa đủ dữ liệu kể từ khi thay đổi để đánh giá.",
         "audit.nokey": "Đánh giá AI cần khóa API (cài đặt AI Hub). Các kiểm tra ở trên hoạt động không cần khóa.",
         "audit.sev.ok": "OK",
         "audit.sev.info": "Lưu ý",
@@ -8096,6 +8119,7 @@ enum AIHubL10n {
         // Loop Check (settings audit)
         "root.card.audit.sub": "AI 将你的 oref 设置与实际数据进行核对。",
         "audit.toolittle": "所选时段的闭环数据不足，无法进行检查。",
+        "audit.recent": "此设置最近已更改——自更改以来的数据还不足以进行评估。",
         "audit.nokey": "AI 评估需要 API 密钥（AI Hub 设置）。上方的检查无需密钥也能使用。",
         "audit.sev.ok": "正常",
         "audit.sev.info": "提示",
