@@ -140,28 +140,76 @@ enum AIHubMealSim {
 
     // MARK: - Erinnerung für den späteren Bolus-Anteil
 
+    /// Persistierte Erinnerung für den 2. Bolus-Anteil eines Split-Bolus.
+    /// Der Home-Screen liest sie, um die Restlaufzeit als Pille anzuzeigen.
+    struct PendingReminder: Equatable {
+        let fireDate: Date
+        let units: Double
+    }
+
+    /// Genau eine aktive, ersetzbare Erinnerung (der nächste geplante Split
+    /// gewinnt) — passend zur einen Pille auf dem Home-Screen. Feste
+    /// Notification-ID, damit sich Erinnerungen nicht stapeln und wieder
+    /// auffindbar/löschbar sind.
+    private static let reminderNotificationID = "iAPS.aiHubLaterBolus"
+    private static let reminderFireKey = "iAPS.aiHubLaterBolus.fireDate"
+    private static let reminderUnitsKey = "iAPS.aiHubLaterBolus.units"
+
     /// Plant eine lokale Erinnerung für den 2. Bolus-Anteil. Bewusst KEINE
     /// automatische Abgabe — die Erinnerung führt den Nutzer in den offiziellen
     /// Bolus-Screen, der den dann aktuellen BZ berücksichtigt.
     static func scheduleLaterBolusReminder(units: Double, afterMinutes: Int, isMmol _: Bool) {
+        let minutes = max(1, afterMinutes)
+        let fireDate = Date().addingTimeInterval(TimeInterval(minutes * 60))
         let center = UNUserNotificationCenter.current()
         center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
             guard granted else { return }
+            // Vorherige Erinnerung ersetzen — nur eine aktive Pille.
+            center.removePendingNotificationRequests(withIdentifiers: [reminderNotificationID])
             let content = UNMutableNotificationContent()
             content.title = hubT("sim.reminder.title")
             content.body = hubT("sim.reminder.body", String(format: "%.2f", units))
             content.sound = .default
             let trigger = UNTimeIntervalNotificationTrigger(
-                timeInterval: TimeInterval(max(1, afterMinutes) * 60),
+                timeInterval: TimeInterval(minutes * 60),
                 repeats: false
             )
             let request = UNNotificationRequest(
-                identifier: "iAPS.aiHubLaterBolus.\(UUID().uuidString)",
+                identifier: reminderNotificationID,
                 content: content,
                 trigger: trigger
             )
             center.add(request, withCompletionHandler: nil)
         }
+        // Synchron persistieren (unabhängig vom Auth-Callback), damit die Pille
+        // sofort erscheint.
+        UserDefaults.standard.set(fireDate, forKey: reminderFireKey)
+        UserDefaults.standard.set(units, forKey: reminderUnitsKey)
+    }
+
+    /// Ausstehende Erinnerung, falls der Auslösezeitpunkt noch in der Zukunft
+    /// liegt. Ist er erreicht/überschritten, gilt die Erinnerung als ausgelöst
+    /// (die Notification ist erschienen) und wird verworfen → nil.
+    static func pendingReminder() -> PendingReminder? {
+        let defaults = UserDefaults.standard
+        guard let fireDate = defaults.object(forKey: reminderFireKey) as? Date else { return nil }
+        guard fireDate > Date() else {
+            clearPendingReminder()
+            return nil
+        }
+        return PendingReminder(fireDate: fireDate, units: defaults.double(forKey: reminderUnitsKey))
+    }
+
+    /// Nutzer-Abbruch: geplante Notification und Persistenz entfernen.
+    static func cancelPendingReminder() {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: [reminderNotificationID])
+        clearPendingReminder()
+    }
+
+    private static func clearPendingReminder() {
+        UserDefaults.standard.removeObject(forKey: reminderFireKey)
+        UserDefaults.standard.removeObject(forKey: reminderUnitsKey)
     }
 
     // MARK: - Bolus-Plan aus der KI-Antwort

@@ -19,6 +19,14 @@ extension Home {
         @State private var showCancelTempTargetAlert = false
         @State private var showExpirationAlert = false
 
+        // Split-Bolus-Erinnerung aus dem AI-Hub-Mahlzeitenberater: Countdown-
+        // Pille im freien Bereich. `reminderTick` treibt die Sekunden-Aktua-
+        // lisierung, `laterReminder` fängt neu gesetzte/abgelaufene Reminder.
+        @State private var laterReminder: AIHubMealSim.PendingReminder?
+        @State private var reminderTick = Date()
+        @State private var showCancelReminderDialog = false
+        private let reminderTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
         // Backup first-run prompt is handled centrally in Main.RootView so the
         // home view never instantiates on a fresh install. No Onboarding
         // FetchRequest or fullScreenCover needed here.
@@ -363,6 +371,11 @@ extension Home {
                         .padding(.horizontal, 16)
                         .padding(.top, 10)
 
+                    reminderPill
+                        .padding(.horizontal, 16)
+                        .padding(.top, 22)
+                        .animation(.easeInOut(duration: 0.3), value: laterReminder)
+
                     Spacer(minLength: 0)
                 }
                 .padding(.top, 8)
@@ -373,6 +386,25 @@ extension Home {
             .overlay(alignment: .bottom) { tabBar }
             .navigationBarHidden(true)
             .ignoresSafeArea(.keyboard)
+            .onAppear { laterReminder = AIHubMealSim.pendingReminder() }
+            .onReceive(reminderTimer) { now in
+                reminderTick = now
+                // Fängt neu gesetzte (aus dem AI-Hub-Sheet) und abgelaufene
+                // Erinnerungen — die Pille erscheint/verschwindet von selbst.
+                let current = AIHubMealSim.pendingReminder()
+                if current != laterReminder { laterReminder = current }
+            }
+            .confirmationDialog(
+                hubT("aur.reminder.cancel.title"),
+                isPresented: $showCancelReminderDialog,
+                titleVisibility: .visible
+            ) {
+                Button(hubT("aur.reminder.cancel.action"), role: .destructive) {
+                    AIHubMealSim.cancelPendingReminder()
+                    laterReminder = nil
+                }
+                Button(hubT("aur.reminder.keep"), role: .cancel) {}
+            }
             .confirmationDialog(
                 hubT("aur.loop.confirm"),
                 isPresented: $showRunLoopConfirm,
@@ -736,6 +768,69 @@ extension Home {
             .frame(maxWidth: .infinity)
             .animation(.easeInOut(duration: 0.25), value: profileActive)
             .animation(.easeInOut(duration: 0.25), value: tempTargetString)
+        }
+
+        // MARK: - Split-Bolus-Erinnerung (Countdown im freien Bereich)
+
+        @ViewBuilder private var reminderPill: some View {
+            if let reminder = laterReminder {
+                let remaining = reminder.fireDate.timeIntervalSince(reminderTick)
+                let unitsText = reminderUnitsFormatter.string(from: reminder.units as NSNumber)
+                    ?? String(format: "%.2f", reminder.units)
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showCancelReminderDialog = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "clock.badge.checkmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(AuroraPalette.textMuted(scheme))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(hubT("aur.reminder.title", "\(unitsText) E"))
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(AuroraPalette.textPrimary(scheme))
+                            Text(reminderRemainingText(remaining))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(AuroraPalette.textMuted(scheme))
+                                .monospacedDigit()
+                        }
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 15))
+                            .foregroundStyle(AuroraPalette.textMuted(scheme).opacity(0.6))
+                            .padding(.leading, 2)
+                    }
+                    // Inhaltsgroß statt volle Breite; der umschließende VStack
+                    // zentriert die Pille dadurch automatisch.
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 11)
+                    .auroraGlassPill()
+                }
+                .buttonStyle(.plain)
+                .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .top)))
+                .accessibilityLabel(Text(hubT("aur.reminder.title", "\(unitsText) E")))
+            }
+        }
+
+        /// Restlaufzeit: "in 1:47 Std" ab einer Stunde, sonst "in 12 Min",
+        /// unter einer Minute "gleich". Wortteile lokalisiert, Zahlen fix.
+        private func reminderRemainingText(_ seconds: TimeInterval) -> String {
+            let total = max(0, Int(seconds.rounded()))
+            if total < 60 { return hubT("aur.reminder.soon") }
+            let minutes = total / 60
+            if minutes >= 60 {
+                return hubT("aur.reminder.in.hours", "\(minutes / 60):" + String(format: "%02d", minutes % 60))
+            }
+            return hubT("aur.reminder.in.minutes", "\(minutes)")
+        }
+
+        private var reminderUnitsFormatter: NumberFormatter {
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .decimal
+            formatter.minimumFractionDigits = 0
+            formatter.maximumFractionDigits = 2
+            formatter.usesGroupingSeparator = false
+            return formatter
         }
 
         private func activeBadge(
