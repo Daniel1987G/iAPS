@@ -58,12 +58,21 @@ struct FoodItemRow: View {
                         Button(action: {
                             showPortionAdjuster = true
                         }) {
-                            PortionSizeBadge(
-                                value: foodItem.portionSizeOrMultiplier,
-                                color: .orange,
-                                icon: "scalemass.fill",
-                                foodItem: foodItem
-                            )
+                            HStack(spacing: 6) {
+                                PortionSizeBadge(
+                                    value: foodItem.portionSizeOrMultiplier,
+                                    color: .orange,
+                                    icon: "scalemass.fill",
+                                    foodItem: foodItem
+                                )
+                                // Anpassbarkeit sichtbar machen: das Badge
+                                // allein wirkt nicht antippbar (Test-Feedback).
+                                if onPortionChange != nil {
+                                    Image(systemName: "slider.horizontal.3")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(BreathePalette.kamille)
+                                }
+                            }
                         }
                         .buttonStyle(.plain)
 

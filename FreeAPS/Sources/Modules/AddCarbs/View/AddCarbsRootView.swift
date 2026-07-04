@@ -107,7 +107,7 @@ extension AddCarbs {
 
         @ViewBuilder private var content: some View {
             VStack(spacing: 0) {
-                FoodSearchBar(rootState: state, state: foodSearchState)
+                FoodSearchBar(ai: state.ai, state: foodSearchState)
                     .padding(.horizontal)
 
                 if foodSearchState.showingFoodSearch {

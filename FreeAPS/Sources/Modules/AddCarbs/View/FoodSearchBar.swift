@@ -3,8 +3,14 @@ import PhotosUI
 import SwiftUI
 
 struct FoodSearchBar: View {
-    @ObservedObject var rootState: AddCarbs.StateModel
+    /// KI-Features aktiv (FreeAPS-Setting `ai`) — die einzige Information,
+    /// die die Bar vom AddCarbs-StateModel brauchte; als Wert entkoppelt,
+    /// damit auch der AI-Hub-Mahlzeitenberater die Bar hosten kann.
+    let ai: Bool
     @ObservedObject var state: FoodSearchStateModel
+    /// Zahnrad ausblendbar: das Settings-Sheet hängt am AddCarbs-StateModel —
+    /// Hosts ohne dieses Model (AI Hub) blenden den Button aus.
+    var showsSettings = true
     @State private var showPhotoPicker = false
     @State private var selectedPhotoItem: PhotosPickerItem?
     @FocusState private var isTextFieldFocused: Bool
@@ -22,7 +28,7 @@ struct FoodSearchBar: View {
                         .font(.system(size: 18, weight: .medium))
                         .frame(width: 36, height: 36)
                         .foregroundColor(.secondary)
-                } else if !rootState.ai {
+                } else if !ai {
                     Image(systemName: FoodItemSource.search.icon)
                         .font(.system(size: 18, weight: .medium))
                         .frame(width: 36, height: 36)
@@ -60,7 +66,7 @@ struct FoodSearchBar: View {
                                     state
                                         .showSavedFoods ? NSLocalizedString("Search saved foods...", comment: "") :
                                         (
-                                            rootState.ai && state.aiTextAnalysis ?
+                                            ai && state.aiTextAnalysis ?
                                                 NSLocalizedString("Ask AI...", comment: "") :
                                                 NSLocalizedString("Search foods...", comment: "")
                                         )
@@ -78,7 +84,7 @@ struct FoodSearchBar: View {
                             returnKeyType: .search,
                             liveEditing: true,
                             onSubmit: {
-                                state.searchByText(query: state.foodSearchText, useAI: rootState.ai)
+                                state.searchByText(query: state.foodSearchText, useAI: ai)
                                 state.showingFoodSearch = true
                             }
                         )
@@ -112,17 +118,19 @@ struct FoodSearchBar: View {
                     Spacer()
 
                     HStack(spacing: 10) {
-                        Button {
-                            UIApplication.shared.endEditing()
-                            state.showingSettings = true
+                        if showsSettings {
+                            Button {
+                                UIApplication.shared.endEditing()
+                                state.showingSettings = true
+                            }
+                            label: {
+                                Image(systemName: "gearshape")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.secondary.opacity(0.5))
+                                    .frame(width: 46, height: 46)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        label: {
-                            Image(systemName: "gearshape")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.secondary.opacity(0.5))
-                                .frame(width: 46, height: 46)
-                        }
-                        .buttonStyle(PlainButtonStyle())
 
                         Button {
                             UIApplication.shared.endEditing()
@@ -174,7 +182,7 @@ struct FoodSearchBar: View {
                         }
                         .buttonStyle(PlainButtonStyle())
 
-                        if rootState.ai {
+                        if ai {
                             Image(systemName: "camera.fill")
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(BreathePalette.flieder)

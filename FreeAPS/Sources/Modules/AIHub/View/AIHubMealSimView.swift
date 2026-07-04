@@ -16,6 +16,8 @@ struct AIHubMealSimView: View {
 
     // Saved Foods
     @State private var showSavedFoods = false
+    // Lebensmittel-Suche (KI-Text, Barcode, Foto — via AddCarbs-Maschinerie)
+    @State private var showFoodSearch = false
     @State private var savedFoods: [AIHubMealSim.SavedFood] = []
     @State private var mealName = ""
     /// Mehrfachauswahl im Picker: Anzahl pro Speise (id → Portionen).
@@ -64,6 +66,18 @@ struct AIHubMealSimView: View {
         .navigationTitle(hubT("sim.title"))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showSavedFoods) { savedFoodsSheet }
+        .sheet(isPresented: $showFoodSearch) {
+            AIHubFoodSearchSheet { name, carbs, fat, protein in
+                mealName = name
+                carbsText = formatGram(carbs)
+                fatText = fat > 0 ? formatGram(fat) : ""
+                proteinText = protein > 0 ? formatGram(protein) : ""
+                // Mahlzeit geändert → alte Strategie/Plan passen nicht mehr.
+                strategy = nil
+                bolusPlan = nil
+                recompute()
+            }
+        }
         .onAppear(perform: load)
         .onChange(of: bgText) { _ in recompute() }
         .onChange(of: carbsText) { _ in recompute() }
@@ -239,8 +253,34 @@ struct AIHubMealSimView: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    Divider()
                 }
+                // Lebensmittel-Suche aus AddCarbs (KI-Text, Barcode, Foto,
+                // Datenbank) — liefert nur Nährwerte zurück, loggt nichts.
+                Button {
+                    showFoodSearch = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
+                        Text(hubT("sim.foodsearch.button"))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        Spacer()
+                        Image(systemName: "sparkles")
+                            .font(.caption)
+                            .foregroundStyle(.purple)
+                    }
+                    .font(.subheadline.weight(.medium))
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(.secondarySystemFill))
+                    )
+                }
+                .buttonStyle(.plain)
+                Divider()
                 numberRow(
                     icon: "drop.fill",
                     tint: .red,
