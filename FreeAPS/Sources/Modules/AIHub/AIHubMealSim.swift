@@ -286,9 +286,18 @@ enum AIHubMealSim {
             ? "The user reliably logs meals."
             : "The user does not always log meals precisely."
 
+        // Fett-Protein-Einheiten (Warschauer Methode): 100 kcal aus Fett/
+        // Eiweiß = 1 FPU. Vorgerechnet + Timing-Staffel, sonst greift das
+        // Modell fürs Splitting reflexhaft zum 2-Stunden-Klischee.
+        let fpuValue = (inputs.fat * 9 + inputs.protein * 4) / 100
         let fpu = inputs.fat > 0 || inputs.protein > 0
-            ? "Fat: \(fmt(inputs.fat)) g, protein: \(fmt(inputs.protein)) g — a fat/protein-rich " +
-            "meal causes a delayed, prolonged glucose rise; consider an extended/split bolus."
+            ? "Fat: \(fmt(inputs.fat)) g, protein: \(fmt(inputs.protein)) g — that is " +
+            String(format: "%.1f", fpuValue) +
+            " FPU (fat-protein units, 100 kcal from fat/protein each). Fat and protein cause a " +
+            "delayed, prolonged glucose rise. If you recommend a split bolus, time the SECOND " +
+            "portion to that load instead of a generic 2 hours: below ~1 FPU a split is usually " +
+            "unnecessary; ~1–2 FPU → second portion after ~90–150 min; 2–4 FPU → ~180–240 min; " +
+            "above 4 FPU (e.g. pizza, fried food) → ~240–300 min."
             : "No notable fat or protein entered."
 
         let activityLine: String = switch inputs.activity {
@@ -345,7 +354,9 @@ enum AIHubMealSim {
         [BOLUSPLAN] now=<units>; later=<units>; afterMin=<minutes>
         where "now" is the bolus amount in units to give immediately and, IF you recommend splitting \
         the bolus, "later" is the second portion in units and "afterMin" the minutes after the meal \
-        to give it. The two should sum to the recommended total bolus (\(fmt(calc.recommendedBolus)) U). \
+        to give it. Choose afterMin from the FPU guidance above — a fat/protein-heavy meal needs a \
+        clearly later second portion (180–300), not the generic 120. The two should sum to the \
+        recommended total bolus (\(fmt(calc.recommendedBolus)) U). \
         If you do NOT recommend a split, use the full amount as "now" and later=0; afterMin=0.
         """
     }
