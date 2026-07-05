@@ -17,9 +17,10 @@ import LoopKit
 ///   Raw-Snapshot gesichert (UserDefaults, max. 10 Einträge). „Rückgängig"
 ///   stellt den Snapshot verbatim wieder her — Basal inklusive Pumpen-Sync.
 /// - **Cooldown:** Jede Übernahme merkt sich Ziel+Slot+Datum. Die Engine
-///   unterdrückt für diesen Slot 3 Tage lang weitere Vorschläge, weil die
-///   Analyse sonst auf Daten der ALTEN Einstellung dieselbe Änderung gleich
-///   nochmal vorschlagen würde (Stapel-Gefahr).
+///   unterdrückt für diesen Slot `cooldownDays` (7 Tage = eine Wochenlauf-
+///   Kadenz) weitere Vorschläge, weil die Analyse sonst auf Daten der ALTEN
+///   Einstellung dieselbe Änderung gleich nochmal vorschlagen würde
+///   (Stapel-Gefahr) — die neue Einstellung braucht erst Zeit zu wirken.
 enum AIHubTherapyApply {
     enum ApplyError: LocalizedError {
         case profileMissing
@@ -393,7 +394,10 @@ enum AIHubTherapyApply {
     }
 
     private static let cooldownKey = "iAPS.aiHubApplyCooldowns"
-    static let cooldownDays = 3
+    /// 7 Tage = eine volle Wochenlauf-Kadenz: Eine übernommene Änderung
+    /// braucht Zeit zu wirken, und der nächste Vorschlag für denselben Slot
+    /// soll ausschließlich auf Daten der NEUEN Einstellung gerechnet sein.
+    static let cooldownDays = 7
 
     private static var cooldowns: [CooldownRecord] {
         get {

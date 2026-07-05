@@ -29,6 +29,19 @@ enum AIHubTherapyAnalysis {
         var gmi: Double { 3.31 + 0.02392 * meanMgdl }
     }
 
+    /// Ein Loop-Zyklus aus der Reasons-Entity. `glucose` und `isf` sind in
+    /// denselben (Nutzer-)Einheiten gespeichert — in (dBG/dt)/ISF kürzen sie
+    /// sich weg, das Ergebnis ist einheitenunabhängig U/h.
+    struct Cycle {
+        let date: Date
+        let iob: Double
+        let cob: Double
+        let glucose: Double
+        let rate: Double
+        let isf: Double
+        let smb: Double
+    }
+
     struct Suggestion: Identifiable {
         enum Kind {
             case basalIncrease
@@ -100,7 +113,7 @@ enum AIHubTherapyAnalysis {
         let calendar = Calendar.current
 
         var readings: [(date: Date, glucose: Int)] = []
-        var reasons: [(date: Date, iob: Double, cob: Double)] = []
+        var reasons: [Cycle] = []
         var meals: [(date: Date, carbs: Double)] = []
 
         context.performAndWait {
@@ -115,7 +128,17 @@ enum AIHubTherapyAnalysis {
             reasonsReq.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
             reasons = ((try? context.fetch(reasonsReq)) ?? [])
                 .compactMap { row in
-                    row.date.map { ($0, row.iob?.doubleValue ?? 0, row.cob?.doubleValue ?? 0) }
+                    row.date.map {
+                        Cycle(
+                            date: $0,
+                            iob: row.iob?.doubleValue ?? 0,
+                            cob: row.cob?.doubleValue ?? 0,
+                            glucose: row.glucose?.doubleValue ?? 0,
+                            rate: row.rate?.doubleValue ?? 0,
+                            isf: row.isf?.doubleValue ?? 0,
+                            smb: row.smb?.doubleValue ?? 0
+                        )
+                    }
                 }
 
             // Meals: `date` ist beim Speichern nicht gesetzt — `actualDate`
@@ -155,18 +178,28 @@ enum AIHubTherapyAnalysis {
         )
 
         let basal = basalSuggestions(
-            readings: readings,
-            reasons: reasons,
-            days: days,
-            calendar: calendar,
-            isMmol: isMmol
+            cycles: reasons,
+            meals: meals,
+            calendar: calendar
         )
-        let isf = isfSuggestions(
+        var isf = isfSuggestions(
             readings: readings,
             reasons: reasons,
             meals: meals,
             calendar: calendar,
             isMmol: isMmol
+        )
+        // Overshoot-Detektor nur für Slots, zu denen die klassische
+        // Korrektur-Analyse nichts sagt — sie hat die stärkere Evidenz.
+        let classicSlots = Set(isf.compactMap { suggestion -> Int? in
+            if case let .isf(slotStartMinute, _) = suggestion.apply { return slotStartMinute }
+            return nil
+        })
+        isf += mealOvershootSuggestions(
+            cycles: reasons,
+            meals: meals,
+            calendar: calendar,
+            excludedSlots: classicSlots
         )
         let cr = crSuggestions(
             readings: readings,
@@ -203,132 +236,152 @@ enum AIHubTherapyAnalysis {
         )
     }
 
-    // MARK: - Basal-Engine
+    // MARK: - Basal-Engine (Clean-Drift)
 
-    private static let blockLength = 3 // Stunden pro Analyse-Block
+    // Misst den Basal-BEDARF direkt statt auf Outcomes (Hypos, erhöhte
+    // Mittelwerte) zu reagieren: über "saubere" Zell-Paare (kein wirkendes
+    // Carb, IOB niedrig, kein kürzlicher SMB) gilt
+    //
+    //     required = laufende Rate + (dBG/dt) / ISF   [U/h]
+    //
+    // = die Rate, die BG flach hielte. Median pro Profil-Segment, Confidence
+    // aus dem Standardfehler des Medians, Shrinkage Richtung Ist-Profil und
+    // harte Schritt-Caps. Methodik am 90d-Export gegen die Python-Referenz
+    // (fullday_basal.py) validiert. Bewusst KEINE "Block-Mittelwert hoch →
+    // Basal hoch"-Regel: bei unvollständigem Carb-Logging deutet die
+    // ungetrackte Mahlzeiten als Basalmangel (klassischer AutoTune-Bias).
+    private static let cleanIOBMax = 0.30 // U — Paar nur sauber, wenn IOB beider Zellen darunter
+    private static let cleanNoSMBMinutes = 90.0 // min ohne SMB ≥ significantSMB (Rest-Wirkung!)
+    private static let significantSMB = 0.10 // U
+    private static let carbWindowMinutes = 120.0 // min Absorptionsfenster nach Carb-Onset
+    private static let riseOnsetMgdl = 25.0 // BG-Anstieg in ≤ 20 min → ungetrackte Mahlzeit
+    private static let minCleanPairs = 40 // Small-n-Schutz pro Segment
+    private static let seTight = 0.03 // U/h — SE darunter: volle Confidence
+    private static let seLoose = 0.12 // U/h — SE darüber: Confidence 0
+    private static let minConfToMove = 0.30
+    private static let maxAbsStep = 0.10 // U/h pro Anwendung
+    private static let maxRelStep = 0.20 // 20 % pro Anwendung
+    private static let minDeltaApply = 0.05 // U/h — kleinere Änderungen nicht vorschlagen
 
     private static func basalSuggestions(
-        readings: [(date: Date, glucose: Int)],
-        reasons: [(date: Date, iob: Double, cob: Double)],
-        days: Int,
-        calendar: Calendar,
-        isMmol: Bool
+        cycles: [Cycle],
+        meals: [(date: Date, carbs: Double)],
+        calendar: Calendar
     ) -> [Suggestion] {
-        guard let schedule = basalSchedule(), !schedule.isEmpty else { return [] }
+        guard let schedule = basalSchedule(), !schedule.isEmpty, cycles.count > 100 else { return [] }
 
-        // Hypo-Episoden: zusammenhängende Phasen < 70, Lücken < 20 min
-        var episodes: [(start: Date, basalDriven: Bool)] = []
-        var episodeStart: Date?
-        var lastLowDate: Date?
-        for reading in readings {
-            if reading.glucose < 70 {
-                if let last = lastLowDate, reading.date.timeIntervalSince(last) > 20 * 60 {
-                    episodeStart = nil // Lücke zu groß → neue Episode
+        // mmol-Erkennung nur für den Rise-Schwellwert (required selbst ist
+        // einheitenunabhängig, weil glucose und isf dieselben Einheiten haben).
+        let glucoseValues = cycles.map(\.glucose).filter { $0 > 0 }.sorted()
+        let isMmolData = !glucoseValues.isEmpty && glucoseValues[glucoseValues.count / 2] < 30
+        let riseDelta = isMmolData ? riseOnsetMgdl / 18.0 : riseOnsetMgdl
+
+        // Carb-Onsets: geloggte Mahlzeiten + Rapid-Rise-Proxy für ungetrackte.
+        var onsets: [Date] = meals.map(\.date)
+        var i = 0
+        while i < cycles.count {
+            let base = cycles[i]
+            guard base.glucose > 0 else { i += 1
+                continue }
+            var found = false
+            var j = i + 1
+            while j < cycles.count,
+                  cycles[j].date.timeIntervalSince(base.date) <= 20 * 60
+            {
+                if cycles[j].glucose > 0, cycles[j].glucose - base.glucose >= riseDelta {
+                    onsets.append(base.date)
+                    found = true
+                    break
                 }
-                if episodeStart == nil {
-                    episodeStart = reading.date
-                    episodes.append((reading.date, isBasalDriven(at: reading.date, reasons: reasons)))
-                }
-                lastLowDate = reading.date
-            } else {
-                episodeStart = nil
+                j += 1
             }
+            // Nach einem Onset 30 min weiterspringen, sonst Onset-Ketten
+            i = found ? lowerBound(cycles.map(\.date), base.date.addingTimeInterval(30 * 60)) : i + 1
+        }
+        onsets.sort()
+
+        func isCarbActive(_ date: Date) -> Bool {
+            containsDate(onsets, after: date.addingTimeInterval(-carbWindowMinutes * 60), until: date)
+        }
+
+        // Minuten seit letztem signifikanten SMB
+        var minutesSinceSMB = [Double](repeating: .infinity, count: cycles.count)
+        var lastSMB: Date?
+        for (index, cycle) in cycles.enumerated() {
+            if cycle.smb >= significantSMB { lastSMB = cycle.date }
+            if let lastSMB = lastSMB {
+                minutesSinceSMB[index] = cycle.date.timeIntervalSince(lastSMB) / 60
+            }
+        }
+
+        // Saubere Zell-Paare → required_rate, dem Profil-Segment zugeordnet
+        let startMinutes = schedule.map(\.startMinute)
+        var requiredBySegment: [[Double]] = Array(repeating: [], count: schedule.count)
+        var daysBySegment: [Set<Date>] = Array(repeating: [], count: schedule.count)
+
+        for index in 0 ..< max(cycles.count - 1, 0) {
+            let a = cycles[index]
+            let b = cycles[index + 1]
+            let dtMin = b.date.timeIntervalSince(a.date) / 60
+            guard dtMin >= 3, dtMin <= 8 else { continue }
+            guard a.glucose > 0, b.glucose > 0, a.isf > 0 else { continue }
+            guard a.iob <= cleanIOBMax, b.iob <= cleanIOBMax else { continue }
+            guard minutesSinceSMB[index] >= cleanNoSMBMinutes else { continue }
+            guard !isCarbActive(a.date), !isCarbActive(b.date) else { continue }
+
+            let bgRatePerHour = (b.glucose - a.glucose) / dtMin * 60
+            let required = a.rate + bgRatePerHour / a.isf
+            let segment = slotIndex(forMinute: minuteOfDay(a.date, calendar), in: startMinutes)
+            requiredBySegment[segment].append(required)
+            daysBySegment[segment].insert(calendar.startOfDay(for: a.date))
         }
 
         var suggestions: [Suggestion] = []
-
-        for blockStart in stride(from: 0, to: 24, by: blockLength) {
-            let blockEnd = blockStart + blockLength
-            let blockHours = blockStart ..< blockEnd
-            let blockReadings = readings.filter { blockHours.contains(calendar.component(.hour, from: $0.date)) }
-
-            // Mindestens ~50 % CGM-Abdeckung im Block
-            guard blockReadings.count >= days * 12 else { continue }
-
-            let currentRate = rate(forHour: blockStart, in: schedule)
+        for (segment, entry) in schedule.enumerated() {
+            let currentRate = entry.rate
+            // Faktor-Apply kann eine 0-Rate nicht anheben — Segment auslassen
             guard currentRate > 0 else { continue }
+            let required = requiredBySegment[segment].sorted()
+            let n = required.count
+            guard n >= minCleanPairs else { continue }
 
-            let blockEpisodes = episodes.filter { blockHours.contains(calendar.component(.hour, from: $0.start)) }
-            let basalDrivenCount = blockEpisodes.filter(\.basalDriven).count
+            let median = required[n / 2]
+            let iqr = required[n * 3 / 4] - required[n / 4]
+            let se = (iqr / 1.349) / Double(n).squareRoot()
+            let confidence = min(1, max(0, 1 - (se - seTight) / (seLoose - seTight)))
+            guard confidence >= minConfToMove else { continue }
 
-            // Regel 1: wiederholte basal-getriebene Hypos → Basal senken
-            if blockEpisodes.count >= 2, basalDrivenCount * 2 >= blockEpisodes.count {
-                let proposed = roundedRate(currentRate * 0.90)
-                guard proposed < currentRate else { continue }
-                let confidence = min(90, 45 + basalDrivenCount * 15)
-                suggestions.append(Suggestion(
-                    kind: .basalDecrease,
-                    timeText: timeRange(blockStart * 60, blockEnd * 60),
-                    currentText: String(format: "%.2f U/h", currentRate),
-                    proposedText: String(format: "%.2f U/h", proposed),
-                    confidence: confidence,
-                    rationale: hubT(
-                        "ti.rationale.decrease",
-                        hh(blockStart),
-                        hh(blockEnd),
-                        blockEpisodes.count,
-                        basalDrivenCount
-                    ),
-                    apply: .basal(startMinute: blockStart * 60, endMinute: blockEnd * 60, factor: 0.90)
-                ))
-                continue
-            }
+            // Shrinkage Richtung Ist-Profil + Schritt-Cap + Mindest-Schritt
+            let shrunk = currentRate + confidence * (median - currentRate)
+            let maxStep = max(maxAbsStep, maxRelStep * currentRate)
+            let applied = currentRate + min(maxStep, max(-maxStep, shrunk - currentRate))
+            let proposed = roundedRate(applied)
+            guard abs(proposed - currentRate) >= minDeltaApply else { continue }
 
-            // Regel 2: konsistent erhöhter Block bei geringem Hypo-Risiko → Basal anheben
-            let blockMean = Double(blockReadings.map(\.glucose).reduce(0, +)) / Double(blockReadings.count)
-            let blockLowShare = Double(blockReadings.filter { $0.glucose < 70 }.count) / Double(blockReadings.count)
-
-            var meansByDay: [Date: (sum: Int, count: Int)] = [:]
-            for reading in blockReadings {
-                let day = calendar.startOfDay(for: reading.date)
-                let entry = meansByDay[day] ?? (0, 0)
-                meansByDay[day] = (entry.sum + reading.glucose, entry.count + 1)
-            }
-            let dayMeans = meansByDay.values.map { Double($0.sum) / Double($0.count) }
-            let elevatedDays = dayMeans.filter { $0 > 150 }.count
-
-            if blockMean > 160, blockLowShare < 0.01, dayMeans.count >= 3,
-               Double(elevatedDays) / Double(dayMeans.count) >= 0.6
-            {
-                let factor = blockMean > 190 ? 1.10 : 1.05
-                let proposed = roundedRate(currentRate * factor)
-                guard proposed > currentRate else { continue }
-                let confidence = Int(Double(elevatedDays) / Double(dayMeans.count) * 90)
-                let pct = Int(((factor - 1) * 100).rounded())
-                suggestions.append(Suggestion(
-                    kind: .basalIncrease,
-                    timeText: timeRange(blockStart * 60, blockEnd * 60),
-                    currentText: String(format: "%.2f U/h", currentRate),
-                    proposedText: String(format: "%.2f U/h", proposed),
-                    confidence: confidence,
-                    rationale: hubT(
-                        "ti.rationale.increase",
-                        hh(blockStart),
-                        hh(blockEnd),
-                        formatGlucose(blockMean, isMmol: isMmol),
-                        elevatedDays,
-                        dayMeans.count,
-                        String(format: "%.1f", blockLowShare * 100),
-                        pct
-                    ),
-                    apply: .basal(startMinute: blockStart * 60, endMinute: blockEnd * 60, factor: factor)
-                ))
-            }
+            let segmentEnd = segment + 1 < schedule.count ? schedule[segment + 1].startMinute : 24 * 60
+            let key = proposed < currentRate ? "ti.rationale.drift.decrease" : "ti.rationale.drift.increase"
+            suggestions.append(Suggestion(
+                kind: proposed < currentRate ? .basalDecrease : .basalIncrease,
+                timeText: timeRange(entry.startMinute, segmentEnd),
+                currentText: String(format: "%.2f U/h", currentRate),
+                proposedText: String(format: "%.2f U/h", proposed),
+                confidence: Int((confidence * 100).rounded()),
+                rationale: hubT(
+                    key,
+                    n,
+                    daysBySegment[segment].count,
+                    String(format: "%.2f", median),
+                    String(format: "%.2f", currentRate)
+                ),
+                apply: .basal(
+                    startMinute: entry.startMinute,
+                    endMinute: segmentEnd,
+                    factor: proposed / currentRate
+                )
+            ))
         }
 
         return Array(suggestions.sorted { $0.confidence > $1.confidence }.prefix(3))
-    }
-
-    /// Hypo ohne aktives Bolus-Insulin und ohne COB = basal-getrieben.
-    /// Herangezogen wird der letzte Loop-Zyklus bis 45 min vor Episodenstart.
-    private static func isBasalDriven(
-        at date: Date,
-        reasons: [(date: Date, iob: Double, cob: Double)]
-    ) -> Bool {
-        guard let reason = reasons.last(where: {
-            $0.date <= date && date.timeIntervalSince($0.date) <= 45 * 60
-        }) else { return false }
-        return reason.iob < 1.0 && reason.cob <= 0
     }
 
     // MARK: - ISF-Engine
@@ -339,7 +392,7 @@ enum AIHubTherapyAnalysis {
     /// Hypos im 4-h-Fenster.
     private static func isfSuggestions(
         readings: [(date: Date, glucose: Int)],
-        reasons: [(date: Date, iob: Double, cob: Double)],
+        reasons: [Cycle],
         meals: [(date: Date, carbs: Double)],
         calendar: Calendar,
         isMmol _: Bool
@@ -437,13 +490,142 @@ enum AIHubTherapyAnalysis {
         return suggestions
     }
 
+    // MARK: - Mahlzeiten-Überschuss (SMB-Overshoot)
+
+    // Ergänzt die klassische Korrektur-Analyse für Auto-ISF-Nutzer mit
+    // unangekündigten Mahlzeiten: Dort gibt es kaum isolierte Korrektur-Boli
+    // (Rettungs-Kohlenhydrate kontaminieren die Fenster zusätzlich), und die
+    // typische Hypo entsteht NACH abgeklungenem IOB als Tail des SMB-Stacks,
+    // der auf den Mahlzeiten-Anstieg geantwortet hat. Detektor:
+    // Anstiegs-Onset → SMB-Summe im 2-h-Fenster → Hypo < 70 innerhalb
+    // 0:45–5:00 h danach = Überschuss-Ereignis. Häufung in einem ISF-Slot →
+    // ISF dort anheben (sanftere SMB-Antwort).
+    private static let overshootMinSMBSum = 1.0 // U im 2-h-Fenster nach Onset
+    private static let overshootMinEvents = 4 // pro ISF-Slot
+    private static let overshootHypoStart = 45.0 * 60 // s nach Onset
+    private static let overshootHypoEnd = 5.0 * 3600 // s nach Onset
+
+    private static func mealOvershootSuggestions(
+        cycles: [Cycle],
+        meals: [(date: Date, carbs: Double)],
+        calendar: Calendar,
+        excludedSlots: Set<Int>
+    ) -> [Suggestion] {
+        guard let profile = isfProfile(), !profile.entries.isEmpty, cycles.count > 100 else { return [] }
+
+        let glucoseValues = cycles.map(\.glucose).filter { $0 > 0 }.sorted()
+        let isMmolData = !glucoseValues.isEmpty && glucoseValues[glucoseValues.count / 2] < 30
+        let riseDelta = isMmolData ? riseOnsetMgdl / 18.0 : riseOnsetMgdl
+        let hypoLimit = isMmolData ? 70.0 / 18.0 : 70.0
+
+        // Onsets: geloggte Mahlzeiten + Rapid-Rise-Proxy, ≥ 2 h auseinander
+        var onsets: [Date] = meals.map(\.date)
+        var index = 0
+        while index < cycles.count {
+            let base = cycles[index]
+            guard base.glucose > 0 else { index += 1
+                continue }
+            var found = false
+            var j = index + 1
+            while j < cycles.count, cycles[j].date.timeIntervalSince(base.date) <= 20 * 60 {
+                if cycles[j].glucose > 0, cycles[j].glucose - base.glucose >= riseDelta {
+                    onsets.append(base.date)
+                    found = true
+                    break
+                }
+                j += 1
+            }
+            index = found
+                ? lowerBound(cycles.map(\.date), base.date.addingTimeInterval(2 * 3600))
+                : index + 1
+        }
+        onsets.sort()
+        var deduped: [Date] = []
+        for onset in onsets where onset.timeIntervalSince(deduped.last ?? .distantPast) >= 2 * 3600 {
+            deduped.append(onset)
+        }
+
+        // Qualifizierte Onsets: SMB-Summe ≥ Schwelle im 2-h-Fenster
+        var qualified: [Date] = []
+        for onset in deduped {
+            var smbSum = 0.0
+            for cycle in cycles {
+                let dt = cycle.date.timeIntervalSince(onset)
+                if dt < 0 { continue }
+                if dt > 2 * 3600 { break }
+                smbSum += cycle.smb
+            }
+            if smbSum >= overshootMinSMBSum { qualified.append(onset) }
+        }
+
+        // Hypo-EPISODEN (Beginn eines <70-Laufs), jede genau EINEM Onset
+        // zugeordnet (dem letzten im Attributionsfenster) — die 5-h-Fenster
+        // aufeinanderfolgender Mahlzeiten überlappen sonst und ein Hypo
+        // würde mehrere Events als Overshoot markieren.
+        var hypoStarts: [Date] = []
+        var inHypo = false
+        for cycle in cycles where cycle.glucose > 0 {
+            if cycle.glucose < hypoLimit {
+                if !inHypo { hypoStarts.append(cycle.date) }
+                inHypo = true
+            } else {
+                inHypo = false
+            }
+        }
+        var overshootOnsets = Set<Date>()
+        for hypo in hypoStarts {
+            let candidate = qualified.last(where: {
+                let dt = hypo.timeIntervalSince($0)
+                return dt >= overshootHypoStart && dt <= overshootHypoEnd
+            })
+            if let candidate = candidate { overshootOnsets.insert(candidate) }
+        }
+
+        var eventsBySlot: [Int: (total: Int, hypo: Int)] = [:]
+        let slotStarts = profile.entries.map(\.startMinute)
+        for onset in qualified {
+            let slot = slotIndex(forMinute: minuteOfDay(onset, calendar), in: slotStarts)
+            var entry = eventsBySlot[slot] ?? (0, 0)
+            entry.total += 1
+            if overshootOnsets.contains(onset) { entry.hypo += 1 }
+            eventsBySlot[slot] = entry
+        }
+
+        var suggestions: [Suggestion] = []
+        for (slot, counts) in eventsBySlot {
+            guard !excludedSlots.contains(profile.entries[slot].startMinute) else { continue }
+            // ≥ 1/3 der Antworten endet im Hypo (und mindestens 3): bei
+            // Hypo-Häufung ist die 50 %-Schwelle der Korrektur-Analyse zu
+            // träge — Richards 14d-Daten: 44 % Overshoot-Quote ganztags.
+            guard counts.total >= overshootMinEvents,
+                  counts.hypo * 3 >= counts.total, counts.hypo >= 3 else { continue }
+            let entry = profile.entries[slot]
+            let proposed = roundedISF(entry.display * 1.10, isMmol: profile.isMmol)
+            guard proposed > entry.display else { continue }
+            suggestions.append(Suggestion(
+                kind: .isfRaise,
+                timeText: slotTimeText(slotStarts, slot),
+                currentText: formatISF(entry.display, isMmol: profile.isMmol),
+                proposedText: formatISF(proposed, isMmol: profile.isMmol),
+                confidence: min(85, 40 + counts.hypo * 12),
+                rationale: hubT("ti.rationale.isf.overshoot", counts.total, counts.hypo),
+                apply: .isf(slotStartMinute: entry.startMinute, proposed: proposed)
+            ))
+        }
+        return suggestions
+    }
+
     // MARK: - CR-Engine
 
     /// Mahlzeiten-Episoden: geloggte Mahlzeiten ≥ 20 g bzw. ≥ 10 g bei
-    /// vollständigem Logging (Einträge < 90 min
-    /// Abstand zusammengefasst), ohne weitere Mahlzeit im 4-h-Fenster.
-    /// Bewertet wird der BG-Verlauf bis +4 h gegen den Vor-Mahlzeiten-Wert
-    /// sowie Hypos bis +5 h.
+    /// vollständigem Logging (Einträge < 90 min Abstand zusammengefasst).
+    /// Isolation bewusst LOCKER (2 h davor frei, 2,5 h danach frei): Wer
+    /// regelmäßig alle 2–3 h isst, hat praktisch nie 4 h Abstand — die alte
+    /// 4-h-Isolation ließ dann fast keine Episoden übrig (14d-Daten: 6 von
+    /// 68 Mahlzeiten). Bewertet wird der BG bei +2,5 h (Peak-Rückgang statt
+    /// voller Absorption) gegen den Vor-Mahlzeiten-Wert sowie Hypos bis
+    /// +3,5 h. Die Zu-hoch-Schwelle ist entsprechend konservativer, weil
+    /// eine gut dosierte Mahlzeit bei +2,5 h legitim noch erhöht sein kann.
     private static func crSuggestions(
         readings: [(date: Date, glucose: Int)],
         meals: [(date: Date, carbs: Double)],
@@ -475,13 +657,14 @@ enum AIHubTherapyAnalysis {
         var episodes: [(slot: Int, isHypo: Bool, isHigh: Bool, rise: Double)] = []
 
         for (index, meal) in merged.enumerated() where meal.carbs >= minMealCarbs {
-            // Überlappung mit Nachbar-Mahlzeit → Zuordnung unklar, auslassen
-            if index > 0, meal.date.timeIntervalSince(merged[index - 1].date) < 4 * 3600 { continue }
-            if index + 1 < merged.count, merged[index + 1].date.timeIntervalSince(meal.date) < 4 * 3600 { continue }
+            // Vor-BG braucht 2 h Ruhe davor; Auswertung braucht 2,5 h ohne
+            // Folge-Mahlzeit. Mehr Isolation ist bei häufigem Essen unerfüllbar.
+            if index > 0, meal.date.timeIntervalSince(merged[index - 1].date) < 2 * 3600 { continue }
+            if index + 1 < merged.count, merged[index + 1].date.timeIntervalSince(meal.date) < 2.5 * 3600 { continue }
 
             guard let preBG = nearestGlucose(to: meal.date, tolerance: 30 * 60, readings, readingDates),
                   let endBG = nearestGlucose(
-                      to: meal.date.addingTimeInterval(4 * 3600),
+                      to: meal.date.addingTimeInterval(2.5 * 3600),
                       tolerance: 30 * 60,
                       readings,
                       readingDates
@@ -489,7 +672,7 @@ enum AIHubTherapyAnalysis {
             else { continue }
             let minBG = minGlucose(
                 from: meal.date,
-                to: meal.date.addingTimeInterval(5 * 3600),
+                to: meal.date.addingTimeInterval(3.5 * 3600),
                 readings,
                 readingDates
             ) ?? endBG
@@ -497,7 +680,7 @@ enum AIHubTherapyAnalysis {
             episodes.append((
                 slot: slot,
                 isHypo: minBG < 70,
-                isHigh: endBG - preBG > 50 && endBG > 180,
+                isHigh: endBG - preBG > 60 && endBG > 180,
                 rise: endBG - preBG
             ))
         }
@@ -691,10 +874,6 @@ enum AIHubTherapyAnalysis {
             (endMinute / 60) % 24,
             endMinute % 60
         )
-    }
-
-    private static func hh(_ hour: Int) -> String {
-        String(format: "%02d:00", hour % 24)
     }
 
     static func formatGlucose(_ mgdl: Double, isMmol: Bool) -> String {

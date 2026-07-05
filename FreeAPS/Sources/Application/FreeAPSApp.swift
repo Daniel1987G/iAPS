@@ -64,6 +64,7 @@ import Swinject
             if scenePhase == .active {
                 appServices.deviceManager.didBecomeActive()
                 appServices.autoBackupService.checkDailyTrigger()
+                AIHubWeeklyCheck.checkTrigger()
             }
         }
     }
