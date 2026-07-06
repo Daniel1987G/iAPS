@@ -7,7 +7,6 @@ extension AIHub {
         @StateObject var state: StateModel
 
         @Environment(\.colorScheme) private var colorScheme
-        @Environment(\.dismiss) private var dismiss
 
         init(resolver: Resolver) {
             self.resolver = resolver
@@ -41,7 +40,10 @@ extension AIHub {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-                        dismiss()
+                        // Deterministisch übers Router-Modal schließen (wie
+                        // Bolus/AddCarbs) — Environment-dismiss brauchte im
+                        // Sheet-NavigationView teils mehrere Taps.
+                        state.hideModal()
                     } label: {
                         Image(systemName: "chevron.left")
                     }
