@@ -158,23 +158,22 @@ enum AIHubTherapyAnalysis {
         let isMmol = (BaseFileStorage().retrieveRaw(OpenAPS.Settings.bgTargets) ?? "")
             .lowercased().contains("mmol")
 
-        guard readings.count >= 50 else {
+        // Gesamt-Statistik aus dem gemeinsamen Kern — gleiche Definitionen
+        // wie Recap & Co. (AIHubGlucoseStats).
+        guard readings.count >= 50,
+              let summary = AIHubGlucoseStats.summary(of: readings)
+        else {
             return Result(stats: nil, suggestions: [], isMmol: isMmol, suppressedCount: 0)
         }
 
-        // Gesamt-Statistik
-        let values = readings.map { Double($0.glucose) }
-        let mean = values.reduce(0, +) / Double(values.count)
-        let variance = values.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(values.count)
-        let sd = variance.squareRoot()
         let stats = Stats(
-            readingCount: readings.count,
+            readingCount: summary.readingCount,
             days: days,
-            meanMgdl: mean,
-            tir: Double(readings.filter { $0.glucose >= 70 && $0.glucose <= 180 }.count) / Double(readings.count),
-            below: Double(readings.filter { $0.glucose < 70 }.count) / Double(readings.count),
-            above: Double(readings.filter { $0.glucose > 180 }.count) / Double(readings.count),
-            cv: mean > 0 ? sd / mean : 0
+            meanMgdl: summary.meanMgdl,
+            tir: summary.tir,
+            below: summary.below,
+            above: summary.above,
+            cv: summary.cv
         )
 
         let basal = basalSuggestions(

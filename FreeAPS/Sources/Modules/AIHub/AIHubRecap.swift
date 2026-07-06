@@ -110,29 +110,10 @@ enum AIHubRecap {
         days: Int,
         calendar: Calendar
     ) -> PeriodStats? {
-        guard readings.count >= 50 else { return nil }
-        let values = readings.map { Double($0.glucose) }
-        let mean = values.reduce(0, +) / Double(values.count)
-        let sd = (values.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(values.count)).squareRoot()
-
-        // Hypo-Episoden: zusammenhängende Phasen < 70, Lücken < 20 min
-        var episodes = 0
-        var inEpisode = false
-        var lastLowDate: Date?
-        for reading in readings {
-            if reading.glucose < 70 {
-                if let last = lastLowDate, reading.date.timeIntervalSince(last) > 20 * 60 {
-                    inEpisode = false
-                }
-                if !inEpisode {
-                    episodes += 1
-                    inEpisode = true
-                }
-                lastLowDate = reading.date
-            } else {
-                inEpisode = false
-            }
-        }
+        // Statistik & Hypo-Episoden aus dem gemeinsamen Kern — gleiche
+        // Definitionen wie Therapy Insights & Co. (AIHubGlucoseStats).
+        guard readings.count >= 50,
+              let summary = AIHubGlucoseStats.summary(of: readings) else { return nil }
 
         // TDD: letzter Wert pro Tag (rollierender 24h-Wert), darüber gemittelt
         var tddByDay: [Date: Double] = [:]
@@ -142,12 +123,12 @@ enum AIHubRecap {
         let tddMean = tddByDay.isEmpty ? 0 : tddByDay.values.reduce(0, +) / Double(tddByDay.count)
 
         return PeriodStats(
-            readingCount: readings.count,
-            meanMgdl: mean,
-            tir: Double(readings.filter { $0.glucose >= 70 && $0.glucose <= 180 }.count) / Double(values.count),
-            below: Double(readings.filter { $0.glucose < 70 }.count) / Double(values.count),
-            cv: mean > 0 ? sd / mean : 0,
-            hypoEpisodes: episodes,
+            readingCount: summary.readingCount,
+            meanMgdl: summary.meanMgdl,
+            tir: summary.tir,
+            below: summary.below,
+            cv: summary.cv,
+            hypoEpisodes: AIHubGlucoseStats.hypoEpisodeStarts(in: readings).count,
             tddMean: tddMean,
             loggedCarbsPerDay: carbs.map(\.grams).reduce(0, +) / Double(days)
         )

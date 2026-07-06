@@ -22,6 +22,7 @@ struct AIHubRecapView: View {
 
                 comparisonCard
                 highlightsCard
+                insightsLink
                 narrativeCard
                 disclaimer
             }
@@ -217,6 +218,35 @@ struct AIHubRecapView: View {
             Text(text)
         }
         .font(.subheadline)
+    }
+
+    // MARK: - Absprung zu Therapy Insights
+
+    /// Rollenteilung sichtbar machen: Recap beobachtet, Therapy Insights
+    /// liefert die Einstellungs-Vorschläge. Der Link erscheint nur, wenn
+    /// sich gegenüber der Vorperiode etwas verschlechtert hat (TIR deutlich
+    /// gefallen oder mehr Hypo-Episoden) — sonst gibt es nichts zu prüfen.
+    @ViewBuilder private var insightsLink: some View {
+        if let summary = summary, let current = summary.current, let previous = summary.previous,
+           current.tir < previous.tir - 0.03 || current.hypoEpisodes > previous.hypoEpisodes
+        {
+            NavigationLink(destination: AIHubTherapyInsightsView()) {
+                card {
+                    HStack(spacing: 10) {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .foregroundStyle(.blue)
+                        Text(hubT("recap.checkinsights"))
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     // MARK: - KI-Beobachtungen
