@@ -35,27 +35,55 @@ enum AIHubGlucoseStats {
         )
     }
 
-    /// Startzeitpunkte zusammenhängender Hypo-Episoden: Phasen < 70 mg/dl;
-    /// eine Lücke > 20 min zwischen niedrigen Werten trennt Episoden.
+    struct HypoEpisode {
+        let start: Date
+        /// Letzter niedriger Messwert der Episode.
+        let end: Date
+        let minMgdl: Int
+
+        var durationMinutes: Int {
+            max(5, Int(end.timeIntervalSince(start) / 60))
+        }
+    }
+
+    /// Zusammenhängende Hypo-Episoden: Phasen < 70 mg/dl; eine Lücke
+    /// > 20 min zwischen niedrigen Werten trennt Episoden.
     /// Readings müssen zeitlich aufsteigend sortiert sein.
-    static func hypoEpisodeStarts(in readings: [(date: Date, glucose: Int)]) -> [Date] {
-        var starts: [Date] = []
-        var inEpisode = false
-        var lastLowDate: Date?
+    static func hypoEpisodes(in readings: [(date: Date, glucose: Int)]) -> [HypoEpisode] {
+        var episodes: [HypoEpisode] = []
+        var start: Date?
+        var end: Date?
+        var minGlucose = Int.max
+
+        func close() {
+            if let start = start, let end = end {
+                episodes.append(HypoEpisode(start: start, end: end, minMgdl: minGlucose))
+            }
+            start = nil
+            end = nil
+            minGlucose = .max
+        }
+
         for reading in readings {
             if reading.glucose < 70 {
-                if let last = lastLowDate, reading.date.timeIntervalSince(last) > 20 * 60 {
-                    inEpisode = false
+                if let last = end, reading.date.timeIntervalSince(last) > 20 * 60 {
+                    close()
                 }
-                if !inEpisode {
-                    starts.append(reading.date)
-                    inEpisode = true
+                if start == nil {
+                    start = reading.date
                 }
-                lastLowDate = reading.date
+                end = reading.date
+                minGlucose = min(minGlucose, reading.glucose)
             } else {
-                inEpisode = false
+                close()
             }
         }
-        return starts
+        close()
+        return episodes
+    }
+
+    /// Startzeitpunkte der Hypo-Episoden (Convenience für Zähl-Zwecke).
+    static func hypoEpisodeStarts(in readings: [(date: Date, glucose: Int)]) -> [Date] {
+        hypoEpisodes(in: readings).map(\.start)
     }
 }

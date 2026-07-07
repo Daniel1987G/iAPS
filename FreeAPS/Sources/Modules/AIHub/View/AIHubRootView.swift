@@ -79,6 +79,8 @@ extension AIHub {
                 AIHubRecapView()
             case .settingsAudit:
                 AIHubSettingsAuditView()
+            case .hypoForensics:
+                AIHubHypoForensicsView()
             case .presetDesigner:
                 AIHubPresetDesignerView()
             case .autoPresets:
@@ -187,6 +189,7 @@ private extension AIHub.Feature {
         case .therapyInsights: return "Therapy Insights"
         case .recap: return "Recap"
         case .settingsAudit: return "Loop Check"
+        case .hypoForensics: return hubT("hf.title")
         case .presetDesigner: return "Preset Designer"
         case .autoPresets: return "AutoPresets"
         }
@@ -199,6 +202,7 @@ private extension AIHub.Feature {
         case .therapyInsights: return hubT("root.card.insights.sub")
         case .recap: return hubT("root.card.recap.sub")
         case .settingsAudit: return hubT("root.card.audit.sub")
+        case .hypoForensics: return hubT("root.card.hypo.sub")
         case .presetDesigner: return hubT("root.card.preset.sub")
         case .autoPresets: return hubT("root.card.auto.sub")
         }
@@ -211,6 +215,7 @@ private extension AIHub.Feature {
         case .therapyInsights: return "chart.line.uptrend.xyaxis"
         case .recap: return "calendar.badge.clock"
         case .settingsAudit: return "checkmark.shield.fill"
+        case .hypoForensics: return "text.magnifyingglass"
         case .presetDesigner: return "slider.horizontal.3"
         case .autoPresets: return "figure.walk.motion"
         }
@@ -223,6 +228,7 @@ private extension AIHub.Feature {
         case .therapyInsights: return .blue
         case .recap: return .indigo
         case .settingsAudit: return .green
+        case .hypoForensics: return .red
         case .presetDesigner: return .pink
         case .autoPresets: return .teal
         }
@@ -234,6 +240,7 @@ private extension AIHub.Feature {
     var usesAI: Bool {
         switch self {
         case .chat,
+             .hypoForensics,
              .mealSim,
              .presetDesigner,
              .recap,

@@ -404,6 +404,8 @@
 		A1AB000000000000A1AB0018 /* AIHubRecap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB0017 /* AIHubRecap.swift */; };
 		A1AB000000000000A1AB0035 /* AIHubSettingsAudit.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB0034 /* AIHubSettingsAudit.swift */; };
 		A1AB000000000000A1AB003D /* AIHubGlucoseStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB003C /* AIHubGlucoseStats.swift */; };
+		A1AB000000000000A1AB003F /* AIHubHypoForensics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB003E /* AIHubHypoForensics.swift */; };
+		A1AB000000000000A1AB0041 /* AIHubHypoForensicsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB0040 /* AIHubHypoForensicsView.swift */; };
 		A1AB000000000000A1AB0037 /* AIHubSettingsAuditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB0036 /* AIHubSettingsAuditView.swift */; };
 		A1AB000000000000A1AB0039 /* AIHubFoodSearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB0038 /* AIHubFoodSearchSheet.swift */; };
 		A1AB000000000000A1AB0031 /* AIHubMealSim.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB0030 /* AIHubMealSim.swift */; };
@@ -1193,6 +1195,8 @@
 		A1AB000000000000A1AB0017 /* AIHubRecap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIHubRecap.swift; sourceTree = "<group>"; };
 		A1AB000000000000A1AB0034 /* AIHubSettingsAudit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIHubSettingsAudit.swift; sourceTree = "<group>"; };
 		A1AB000000000000A1AB003C /* AIHubGlucoseStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIHubGlucoseStats.swift; sourceTree = "<group>"; };
+		A1AB000000000000A1AB003E /* AIHubHypoForensics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIHubHypoForensics.swift; sourceTree = "<group>"; };
+		A1AB000000000000A1AB0040 /* AIHubHypoForensicsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIHubHypoForensicsView.swift; sourceTree = "<group>"; };
 		A1AB000000000000A1AB0036 /* AIHubSettingsAuditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIHubSettingsAuditView.swift; sourceTree = "<group>"; };
 		A1AB000000000000A1AB0038 /* AIHubFoodSearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIHubFoodSearchSheet.swift; sourceTree = "<group>"; };
 		A1AB000000000000A1AB0030 /* AIHubMealSim.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIHubMealSim.swift; sourceTree = "<group>"; };
@@ -2956,6 +2960,7 @@
 				A1AB000000000000A1AB0017 /* AIHubRecap.swift */,
 				A1AB000000000000A1AB0034 /* AIHubSettingsAudit.swift */,
 				A1AB000000000000A1AB003C /* AIHubGlucoseStats.swift */,
+				A1AB000000000000A1AB003E /* AIHubHypoForensics.swift */,
 				A1AB000000000000A1AB0030 /* AIHubMealSim.swift */,
 				A1AB000000000000A1AB0005 /* AIHubStateModel.swift */,
 				A1AB000000000000A1AB0013 /* AIHubTherapyAnalysis.swift */,
@@ -2976,6 +2981,7 @@
 				A1AB000000000000A1AB001F /* AIHubPresetDesignerView.swift */,
 				A1AB000000000000A1AB0019 /* AIHubRecapView.swift */,
 				A1AB000000000000A1AB0036 /* AIHubSettingsAuditView.swift */,
+				A1AB000000000000A1AB0040 /* AIHubHypoForensicsView.swift */,
 				A1AB000000000000A1AB0038 /* AIHubFoodSearchSheet.swift */,
 				A1AB000000000000A1AB0032 /* AIHubMealSimView.swift */,
 				A1AB000000000000A1AB0007 /* AIHubRootView.swift */,
@@ -4304,6 +4310,8 @@
 				A1AB000000000000A1AB0018 /* AIHubRecap.swift in Sources */,
 				A1AB000000000000A1AB0035 /* AIHubSettingsAudit.swift in Sources */,
 				A1AB000000000000A1AB003D /* AIHubGlucoseStats.swift in Sources */,
+				A1AB000000000000A1AB003F /* AIHubHypoForensics.swift in Sources */,
+				A1AB000000000000A1AB0041 /* AIHubHypoForensicsView.swift in Sources */,
 				A1AB000000000000A1AB0037 /* AIHubSettingsAuditView.swift in Sources */,
 				A1AB000000000000A1AB0039 /* AIHubFoodSearchSheet.swift in Sources */,
 				A1AB000000000000A1AB0031 /* AIHubMealSim.swift in Sources */,

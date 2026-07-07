@@ -11,6 +11,7 @@ enum AIHub {
         case therapyInsights
         case recap
         case settingsAudit
+        case hypoForensics
         case presetDesigner
         case autoPresets
 
