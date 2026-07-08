@@ -12,6 +12,7 @@ protocol PumpHistoryStorage {
     func storeEvents(_ events: [PumpHistoryEvent])
     func storeJournalCarbs(_ carbs: Int)
     func recent() -> [PumpHistoryEvent]
+    func manualBolusHistory() -> [PumpHistoryEvent]
     func nightscoutTretmentsNotUploaded() -> [NigtscoutTreatment]
     func saveCancelTempEvents()
     func deleteInsulin(at date: Date)
@@ -230,11 +231,35 @@ final class BasePumpHistoryStorage: PumpHistoryStorage, Injectable {
             self.broadcaster.notify(PumpHistoryObserver.self, on: self.processQueue) {
                 $0.pumpHistoryDidUpdate(uniqEvents)
             }
+
+            self.storeManualBoluses(from: events)
+        }
+    }
+
+    /// Mirrors every manual (non-SMB, non-externally-logged) bolus into a
+    /// long-lived store so Quick-Pick Boluses can learn from up to 90 days of
+    /// history — the regular pumpHistory file is trimmed to 24h and thus too
+    /// short-lived for this. Deduplicated by event id, so re-reads of the same
+    /// pump events don't create duplicates.
+    private func storeManualBoluses(from events: [PumpHistoryEvent]) {
+        let manual = events.filter { $0.type == .bolus && $0.isSMB != true && $0.isExternal != true }
+        guard !manual.isEmpty else { return }
+        let file = OpenAPS.Monitor.manualBolusHistory
+        storage.transaction { storage in
+            storage.append(manual, to: file, uniqBy: \.id)
+            let trimmed = storage.retrieve(file, as: [PumpHistoryEvent].self)?
+                .filter { $0.timestamp.addingTimeInterval(90.days.timeInterval) > Date() }
+                .sorted { $0.timestamp > $1.timestamp } ?? []
+            storage.save(Array(trimmed), as: file)
         }
     }
 
     func recent() -> [PumpHistoryEvent] {
         storage.retrieve(OpenAPS.Monitor.pumpHistory, as: [PumpHistoryEvent].self)?.reversed() ?? []
+    }
+
+    func manualBolusHistory() -> [PumpHistoryEvent] {
+        storage.retrieve(OpenAPS.Monitor.manualBolusHistory, as: [PumpHistoryEvent].self) ?? []
     }
 
     func deleteInsulin(at date: Date) {

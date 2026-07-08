@@ -12,6 +12,7 @@ extension UIUX {
         @Published var skipBolusScreenAfterCarbs: Bool = false
         @Published var useFPUconversion: Bool = true
         @Published var useTargetButton: Bool = false
+        @Published var enableQuickBolus: Bool = false
         @Published var hours: Decimal = 6
         @Published var alwaysUseColors: Bool = false
         @Published var minimumSMB: Decimal = 0.3
@@ -65,6 +66,7 @@ extension UIUX {
             subscribeSetting(\.fpuAmounts, on: $fpuAmounts) { fpuAmounts = $0 }
             subscribeSetting(\.carbButton, on: $carbButton) { carbButton = $0 }
             subscribeSetting(\.profileButton, on: $profileButton) { profileButton = $0 }
+            subscribeSetting(\.enableQuickBolus, on: $enableQuickBolus) { enableQuickBolus = $0 }
             subscribeSetting(\.lightMode, on: $lightMode) { lightMode = $0 }
             subscribeSetting(\.showInsulinActivity, on: $showInsulinActivity) { showInsulinActivity = $0 }
             subscribeSetting(\.showCobChart, on: $showCobChart) { showCobChart = $0 }

@@ -164,6 +164,8 @@ struct FreeAPSSettings: JSON, Equatable {
     // Backup
     var autoBackupEnabled: Bool = false
     var backupIncludeNightscoutCredentials: Bool = true
+    // Quick-Pick Boluses: long-press the Aurora bolus button for learned suggestions
+    var enableQuickBolus: Bool = false
     var autoisfEffective: Bool {
         autoisf && !isNighttime
     }
@@ -805,6 +807,10 @@ extension FreeAPSSettings: Decodable {
             Bool.self, forKey: .backupIncludeNightscoutCredentials
         ) {
             settings.backupIncludeNightscoutCredentials = backupIncludeNightscoutCredentials
+        }
+
+        if let enableQuickBolus = try? container.decode(Bool.self, forKey: .enableQuickBolus) {
+            settings.enableQuickBolus = enableQuickBolus
         }
 
         self = settings

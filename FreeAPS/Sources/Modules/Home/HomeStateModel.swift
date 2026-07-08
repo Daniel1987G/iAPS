@@ -15,6 +15,8 @@ extension Home {
         @Injected() var nightscoutManager: NightscoutManager!
         @Injected() var storage: TempTargetsStorage!
         @Injected() var keychain: Keychain!
+        @Injected() var pumpHistoryStorage: PumpHistoryStorage!
+        @Injected() var unlockmanager: UnlockManager!
         let coredataContext = CoreDataStack.shared.persistentContainer.viewContext
         private let timer = DispatchTimer(timeInterval: 5)
         private(set) var filteredHours = 24
@@ -59,6 +61,8 @@ extension Home {
         @Published var standing: Bool = false
         @Published var preview: Bool = true
         @Published var useTargetButton: Bool = false
+        @Published var enableQuickBolus: Bool = false
+        @Published var quickBolusHistory: [Decimal] = []
         @Published var overrideHistory: [OverrideHistory] = []
         @Published var alwaysUseColors: Bool = false
         @Published var useCalc: Bool = true
@@ -181,6 +185,7 @@ extension Home {
             dynamicVariables = provider.dynamicVariables
             overrideHistory = provider.overrideHistory()
             uploadStats = settingsManager.settings.uploadStats
+            enableQuickBolus = settingsManager.settings.enableQuickBolus
             enactedSuggestion = provider.enactedSuggestion
             data.units = settingsManager.settings.units
             allowManualTemp = !settingsManager.settings.closedLoop
@@ -402,6 +407,92 @@ extension Home {
 
         func cancelBolus() {
             apsManager.cancelBolus()
+        }
+
+        /// Learns bolus suggestions from up to 90 days of manual boluses.
+        /// Scoring (ported 1:1 from Trio): a Gaussian over time-of-day
+        /// (sigma = 60 min, circular over the 1440-minute day), a weekday
+        /// similarity factor (same day = 1.0, same weekend/weekday category =
+        /// 0.7, otherwise 0.15) and a recency decay (10-day half-life). Amounts
+        /// are grouped rounded to two decimals; the five highest-scoring amounts
+        /// with a score >= 0.1 become the suggestions.
+        func loadQuickBolusSuggestions() {
+            guard enableQuickBolus else { return }
+            let cutoff = Date().addingTimeInterval(-90.days.timeInterval)
+            let boluses = pumpHistoryStorage.manualBolusHistory().filter { $0.timestamp >= cutoff }
+
+            let now = Date()
+            let cal = Calendar.current
+            let nowMinute = cal.component(.hour, from: now) * 60 + cal.component(.minute, from: now)
+            let nowDOW = cal.component(.weekday, from: now)
+            let sigma = 60.0
+            let halfLife = 10.0
+
+            var groups: [Decimal: Double] = [:]
+            for bolus in boluses {
+                guard let amount = bolus.amount, amount > 0 else { continue }
+                let timestamp = bolus.timestamp
+
+                var roundedKey = Decimal()
+                var tempAmount = amount
+                NSDecimalRound(&roundedKey, &tempAmount, 2, .plain)
+
+                let entryMinute = cal.component(.hour, from: timestamp) * 60 + cal.component(.minute, from: timestamp)
+                let entryDOW = cal.component(.weekday, from: timestamp)
+
+                let diff = abs(entryMinute - nowMinute)
+                let circularDiff = Double(min(diff, 1440 - diff))
+                let t = exp(-(circularDiff * circularDiff) / (2.0 * sigma * sigma))
+
+                let d: Double
+                if entryDOW == nowDOW {
+                    d = 1.0
+                } else {
+                    let nowWeekend = nowDOW == 1 || nowDOW == 7
+                    let entryWeekend = entryDOW == 1 || entryDOW == 7
+                    d = nowWeekend == entryWeekend ? 0.7 : 0.15
+                }
+
+                let daysAgo = now.timeIntervalSince(timestamp) / 86400.0
+                let r = pow(0.5, daysAgo / halfLife)
+
+                groups[roundedKey, default: 0] += t * d * r
+            }
+
+            quickBolusHistory = groups
+                .filter { $0.value >= 0.1 }
+                .sorted { $0.value > $1.value }
+                .prefix(5)
+                .map(\.key)
+        }
+
+        /// Enacts a quick-pick bolus: caps at maxBolus, requires the normal
+        /// Face ID / Touch ID unlock, then delivers a manual bolus. Returns
+        /// whether the bolus was actually enacted (false when auth failed).
+        func enactQuickBolus(amount: Decimal) async -> Bool {
+            guard amount > 0 else { return false }
+            let delivery = Double(min(amount, settingsManager.pumpSettings.maxBolus))
+
+            let authenticated = await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
+                var resumed = false
+                unlockmanager.unlock()
+                    .sink(receiveCompletion: { completion in
+                        if case .failure = completion, !resumed {
+                            resumed = true
+                            continuation.resume(returning: false)
+                        }
+                    }, receiveValue: { _ in
+                        if !resumed {
+                            resumed = true
+                            continuation.resume(returning: true)
+                        }
+                    })
+                    .store(in: &self.lifetime)
+            }
+
+            guard authenticated else { return false }
+            apsManager.enactBolus(amount: delivery, isSMB: false)
+            return true
         }
 
         func cancelProfile() {
@@ -890,6 +981,7 @@ extension Home.StateModel:
     func settingsDidChange(_ settings: FreeAPSSettings) {
         allowManualTemp = !settings.closedLoop
         uploadStats = settingsManager.settings.uploadStats
+        enableQuickBolus = settingsManager.settings.enableQuickBolus
         closedLoop = settingsManager.settings.closedLoop
         data.units = settingsManager.settings.units
         animatedBackground = settingsManager.settings.animatedBackground

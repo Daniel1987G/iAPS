@@ -21,6 +21,9 @@ struct AuroraTabBar: View {
     var targetActive: Bool = false
     let onCarbs: () -> Void
     let onBolus: () -> Void
+    /// Optional long-press on the bolus button — wired to Quick-Pick Boluses.
+    /// A tap still opens the normal bolus screen.
+    var onBolusLongPress: (() -> Void)? = nil
     let onDataTable: () -> Void
     let onStatistics: () -> Void
     let onProfile: () -> Void
@@ -52,7 +55,11 @@ struct AuroraTabBar: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 onCarbs()
             }
-            actionButton(icon: "syringe.fill", accessibility: NSLocalizedString("Bolus", comment: "")) {
+            actionButton(
+                icon: "syringe.fill",
+                accessibility: NSLocalizedString("Bolus", comment: ""),
+                longPressAction: onBolusLongPress
+            ) {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 onBolus()
             }
@@ -139,19 +146,33 @@ struct AuroraTabBar: View {
 
     // MARK: - Helpers
 
-    private func actionButton(
+    @ViewBuilder private func actionButton(
         icon: String,
         accessibility: String,
         tint: Color? = nil,
+        longPressAction: (() -> Void)? = nil,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action, label: {
+        if let longPressAction {
+            // Tap + long-press live on a plain image (not a Button) so the
+            // long-press gesture doesn't swallow the tap.
             Image(systemName: icon)
                 .font(.system(size: 22, weight: tint == nil ? .regular : .semibold))
                 .foregroundStyle(tint ?? AuroraPalette.textMuted(scheme))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        })
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text(accessibility))
+                .contentShape(Rectangle())
+                .onTapGesture { action() }
+                .onLongPressGesture(minimumDuration: 0.5) { longPressAction() }
+                .accessibilityLabel(Text(accessibility))
+        } else {
+            Button(action: action, label: {
+                Image(systemName: icon)
+                    .font(.system(size: 22, weight: tint == nil ? .regular : .semibold))
+                    .foregroundStyle(tint ?? AuroraPalette.textMuted(scheme))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            })
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(accessibility))
+        }
     }
 }

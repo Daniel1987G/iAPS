@@ -18,6 +18,8 @@ extension Home {
         @State private var showOverrideDetail = false
         @State private var showCancelTempTargetAlert = false
         @State private var showExpirationAlert = false
+        @State private var showQuickBolusPicker = false
+        @State private var showQuickBolusNoHistory = false
 
         // Split-Bolus-Erinnerung aus dem AI-Hub-Mahlzeitenberater: Countdown-
         // Pille im freien Bereich. `reminderTick` treibt die Sekunden-Aktua-
@@ -445,6 +447,22 @@ extension Home {
                 DynamicHistoryView(units: state.data.units)
                     .environment(\.colorScheme, scheme)
             }
+            .sheet(isPresented: $showQuickBolusPicker) {
+                QuickPickBolusesView(
+                    suggestions: state.quickBolusHistory,
+                    onEnact: { amount in await state.enactQuickBolus(amount: amount) },
+                    isPresented: $showQuickBolusPicker
+                )
+                .environment(\.colorScheme, scheme)
+            }
+            .alert(
+                hubT("qb.nohistory.title"),
+                isPresented: $showQuickBolusNoHistory
+            ) {
+                Button(hubT("qb.ok"), role: .cancel) {}
+            } message: {
+                Text(hubT("qb.nohistory.body"))
+            }
             .onChange(of: scenePhase) { phase in
                 switch phase {
                 case .active:
@@ -695,6 +713,16 @@ extension Home {
                 },
                 onBolus: {
                     state.showModal(for: .bolus(waitForSuggestion: true, fetch: false))
+                },
+                onBolusLongPress: {
+                    guard state.enableQuickBolus else { return }
+                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                    state.loadQuickBolusSuggestions()
+                    if state.quickBolusHistory.isEmpty {
+                        showQuickBolusNoHistory = true
+                    } else {
+                        showQuickBolusPicker = true
+                    }
                 },
                 onDataTable: { state.showModal(for: .dataTable) },
                 onStatistics: { state.showModal(for: .statistics) },

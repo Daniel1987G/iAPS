@@ -70,6 +70,9 @@ extension OpenAPS {
         static let dynamicVariables = "monitor/dynamicVariables.json"
         static let alertHistory = "monitor/alerthistory.json"
         static let statistics = "monitor/statistics.json"
+        // App-owned long-term store of manual boluses (Quick-Pick Boluses learning).
+        // Unlike pumpHistory (trimmed to 24h), this is kept for 90 days.
+        static let manualBolusHistory = "monitor/manual-bolus-history.json"
     }
 
     enum Enact {

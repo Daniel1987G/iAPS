@@ -70,6 +70,22 @@ enum AIHubL10n {
     // MARK: English (Basis/Fallback)
 
     private static let en: [String: String] = [
+        // Quick-Pick Boluses
+        "qb.title": "Quick-Pick Boluses",
+        "qb.subtitle": "Your most-used bolus amounts at similar times on similar days. Tap one to pick it.",
+        "qb.slide": "Slide to Enact Bolus",
+        "qb.unit": "U",
+        "qb.ok": "OK",
+        "qb.authfail.title": "Could not authenticate",
+        "qb.authfail.body": "Face ID or Touch ID did not succeed. The bolus was not enacted.",
+        "qb.info.title": "About Quick-Pick Boluses",
+        "qb.info.body": "Quick-Pick Boluses looks at your manual boluses from the past 90 days and suggests the amounts you most commonly enact at this time of day.\n\nIt gives more weight to boluses from similar times of day, and treats weekdays and weekends separately. Older entries gradually count less.\n\nTap a suggestion to select it, then slide to confirm. Your normal Face ID or Touch ID approval always applies.",
+        "qb.info.gotit": "Got it!",
+        "qb.nohistory.title": "No bolus history yet",
+        "qb.nohistory.body": "Quick-Pick Boluses learns from your manual boluses over time. Once you've delivered a few boluses, it will suggest amounts based on what you typically enact at this time of day.",
+        "qb.setting.title": "Quick-Pick Boluses",
+        "qb.setting.header": "Quick-Pick Boluses",
+        "qb.setting.footer": "Long-press the bolus button on the Aurora home screen to pick from bolus amounts learned from your manual boluses. Suggestions build up over time and require the usual unlock before enacting.",
         // Loop Check (settings audit)
         "root.card.audit.sub": "AI checks your oref settings against your real data.",
         "root.card.hypo.sub": "Classifies every low: basal, meal bolus, overcorrection & more.",
@@ -522,6 +538,22 @@ enum AIHubL10n {
     // MARK: Deutsch
 
     private static let de: [String: String] = [
+        // Quick-Pick Boluses
+        "qb.title": "Schnell-Bolus",
+        "qb.subtitle": "Deine häufigsten Bolusmengen zu ähnlichen Zeiten an ähnlichen Tagen. Tippe eine an.",
+        "qb.slide": "Zum Abgeben schieben",
+        "qb.unit": "E",
+        "qb.ok": "OK",
+        "qb.authfail.title": "Authentifizierung fehlgeschlagen",
+        "qb.authfail.body": "Face ID oder Touch ID war nicht erfolgreich. Der Bolus wurde nicht abgegeben.",
+        "qb.info.title": "Über Schnell-Bolus",
+        "qb.info.body": "Schnell-Bolus betrachtet deine manuellen Boli der letzten 90 Tage und schlägt die Mengen vor, die du zu dieser Tageszeit am häufigsten abgibst.\n\nBoli zu ähnlichen Tageszeiten zählen stärker; Werktage und Wochenenden werden getrennt behandelt. Ältere Einträge zählen nach und nach weniger.\n\nTippe einen Vorschlag an, dann schiebe zum Bestätigen. Deine übliche Face-ID-/Touch-ID-Freigabe gilt immer.",
+        "qb.info.gotit": "Verstanden!",
+        "qb.nohistory.title": "Noch keine Bolus-Historie",
+        "qb.nohistory.body": "Schnell-Bolus lernt mit der Zeit aus deinen manuellen Boli. Sobald du ein paar Boli abgegeben hast, schlägt er Mengen anhand deiner typischen Abgaben zu dieser Tageszeit vor.",
+        "qb.setting.title": "Schnell-Bolus",
+        "qb.setting.header": "Schnell-Bolus",
+        "qb.setting.footer": "Long-Press auf den Bolus-Button im Aurora-Home-Screen, um aus gelernten Bolusmengen zu wählen. Die Vorschläge bauen sich mit der Zeit auf und erfordern vor der Abgabe die übliche Freigabe.",
         // Loop Check (settings audit)
         "root.card.audit.sub": "KI prüft deine oref-Einstellungen gegen deine echten Daten.",
         "root.card.hypo.sub": "Klassifiziert jede Unterzuckerung: Basal, Mahlzeit, Überkorrektur & mehr.",

@@ -132,6 +132,9 @@
 		1BBB001DAD60F3B8CEA4B1C7 /* ISFEditorStateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505E09DC17A0C3D0AF4B66FE /* ISFEditorStateModel.swift */; };
 		1D845DF2E3324130E1D95E67 /* DataTableProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60744C3E9BB3652895C908CC /* DataTableProvider.swift */; };
 		227F01F89466D4A0DC739408 /* AuroraTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D497E9A97439B17E8F24381 /* AuroraTabBar.swift */; };
+		A1AB000000000000A1AB0048 /* QuickPickBolusesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB0047 /* QuickPickBolusesView.swift */; };
+		A1AB000000000000A1AB004A /* QuickPickBolusesInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB0049 /* QuickPickBolusesInfoView.swift */; };
+		A1AB000000000000A1AB004C /* SlideToConfirmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB000000000000A1AB004B /* SlideToConfirmView.swift */; };
 		23888883D4EA091C88480FF2 /* BolusProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19984D62EFC0035A9E9644D /* BolusProvider.swift */; };
 		28089E07169488CF6DCC2A31 /* AddCarbsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86FC1CFD647CF34508AF9A3B /* AddCarbsRootView.swift */; };
 		2A414E1B7F3173036C872E20 /* TidepoolSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 716B55732AE2561903E8803D /* TidepoolSetupView.swift */; };
@@ -1112,6 +1115,9 @@
 		3BF66A62F7FA6E1D512E0F98 /* TidepoolL10n.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TidepoolL10n.swift; sourceTree = "<group>"; };
 		3BF768BD6264FF7D71D66767 /* NightscoutConfigProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NightscoutConfigProvider.swift; sourceTree = "<group>"; };
 		3D497E9A97439B17E8F24381 /* AuroraTabBar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuroraTabBar.swift; sourceTree = "<group>"; };
+		A1AB000000000000A1AB0047 /* QuickPickBolusesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickPickBolusesView.swift; sourceTree = "<group>"; };
+		A1AB000000000000A1AB0049 /* QuickPickBolusesInfoView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickPickBolusesInfoView.swift; sourceTree = "<group>"; };
+		A1AB000000000000A1AB004B /* SlideToConfirmView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlideToConfirmView.swift; sourceTree = "<group>"; };
 		3F60E97100041040446F44E7 /* PumpConfigStateModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PumpConfigStateModel.swift; sourceTree = "<group>"; };
 		3F8A87AA037BD079BA3528BA /* ConfigEditorDataFlow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConfigEditorDataFlow.swift; sourceTree = "<group>"; };
 		42369F66CF91F30624C0B3A6 /* BasalProfileEditorProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BasalProfileEditorProvider.swift; sourceTree = "<group>"; };
@@ -1518,6 +1524,16 @@
 			path = Screens;
 			sourceTree = "<group>";
 		};
+		A1AB000000000000A1AB0046 /* QuickPickBoluses */ = {
+			isa = PBXGroup;
+			children = (
+				A1AB000000000000A1AB0047 /* QuickPickBolusesView.swift */,
+				A1AB000000000000A1AB0049 /* QuickPickBolusesInfoView.swift */,
+				A1AB000000000000A1AB004B /* SlideToConfirmView.swift */,
+			);
+			path = QuickPickBoluses;
+			sourceTree = "<group>";
+		};
 		0D76BBC81CEDC1A0050F45EF /* View */ = {
 			isa = PBXGroup;
 			children = (
@@ -1536,6 +1552,7 @@
 				FD28B2D0AAF14D53AFAB853D /* Sheets */,
 				9EED4E05EFF4C0F279675275 /* Components */,
 				0D3F6FCB70D0871B88F640BF /* Screens */,
+				A1AB000000000000A1AB0046 /* QuickPickBoluses */,
 				ACFB0749D1992E87C36D782D /* AuroraBackground.swift */,
 				6CA3430CF6026B0C85C8610F /* AuroraGlass.swift */,
 				C083D46B1F96F1A38AF922F8 /* AuroraPalette.swift */,
@@ -4353,6 +4370,9 @@
 				92FDB353A4AF855DCE14D284 /* AuroraStatus.swift in Sources */,
 				05EFE2EE40BD7B41738EFF23 /* AuroraStatusRow.swift in Sources */,
 				227F01F89466D4A0DC739408 /* AuroraTabBar.swift in Sources */,
+				A1AB000000000000A1AB0048 /* QuickPickBolusesView.swift in Sources */,
+				A1AB000000000000A1AB004A /* QuickPickBolusesInfoView.swift in Sources */,
+				A1AB000000000000A1AB004C /* SlideToConfirmView.swift in Sources */,
 				AFD3583274477B570A4151C0 /* AuroraMainChart.swift in Sources */,
 				CD51D94BC925483AD423E3D3 /* AuroraListRow.swift in Sources */,
 				B9EC779F76121E6F0DAB4AC5 /* AuroraPrimaryButton.swift in Sources */,

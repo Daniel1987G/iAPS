@@ -85,6 +85,12 @@ extension UIUX {
                 }
 
                 Section {
+                    Toggle(hubT("qb.setting.title"), isOn: $state.enableQuickBolus)
+                } header: { Text(hubT("qb.setting.header")) } footer: {
+                    Text(hubT("qb.setting.footer"))
+                }
+
+                Section {
                     HStack {
                         Text("Low")
                         Spacer()
