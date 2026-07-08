@@ -221,6 +221,11 @@ final class BaseBackupService: BackupService, Injectable {
                 storage.save(typed, as: path)
                 return "[TempTarget]"
             }
+        case OpenAPS.Monitor.manualBolusHistory:
+            if let typed = [PumpHistoryEvent](from: raw) {
+                storage.save(typed, as: path)
+                return "[PumpHistoryEvent]"
+            }
         default:
             break
         }

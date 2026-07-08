@@ -197,6 +197,10 @@ enum EarlyBackupRestore {
             if let typed = [TempTarget](from: raw), saveTyped(typed, as: path) {
                 return "[TempTarget]"
             }
+        case OpenAPS.Monitor.manualBolusHistory:
+            if let typed = [PumpHistoryEvent](from: raw), saveTyped(typed, as: path) {
+                return "[PumpHistoryEvent]"
+            }
         default:
             break
         }

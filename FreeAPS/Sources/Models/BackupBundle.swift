@@ -68,7 +68,12 @@ extension BackupBundle {
         OpenAPS.Settings.autoisf,
         OpenAPS.FreeAPS.tempTargetsPresets,
         OpenAPS.FreeAPS.calibrations,
-        OpenAPS.FreeAPS.nutritionProfile
+        OpenAPS.FreeAPS.nutritionProfile,
+        // App-owned 90-day manual-bolus store that drives Quick-Pick Bolus
+        // learning. Independent of the settings/profile files above, so it is
+        // appended last; unlike pumpHistory it survives a reinstall and must
+        // be carried across in the backup.
+        OpenAPS.Monitor.manualBolusHistory
     ]
 
     /// Suggested filename for a backup taken at the given moment.
