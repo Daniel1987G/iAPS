@@ -83,6 +83,8 @@ extension AIHub {
                 AIHubHypoForensicsView()
             case .doctorReport:
                 AIHubDoctorReportView()
+            case .deviceHealth:
+                AIHubDeviceHealthView()
             case .presetDesigner:
                 AIHubPresetDesignerView()
             case .autoPresets:
@@ -193,6 +195,7 @@ private extension AIHub.Feature {
         case .settingsAudit: return "Loop Check"
         case .hypoForensics: return hubT("hf.title")
         case .doctorReport: return hubT("dr.title")
+        case .deviceHealth: return hubT("dh.title")
         case .presetDesigner: return "Preset Designer"
         case .autoPresets: return "AutoPresets"
         }
@@ -207,6 +210,7 @@ private extension AIHub.Feature {
         case .settingsAudit: return hubT("root.card.audit.sub")
         case .hypoForensics: return hubT("root.card.hypo.sub")
         case .doctorReport: return hubT("root.card.report.sub")
+        case .deviceHealth: return hubT("root.card.device.sub")
         case .presetDesigner: return hubT("root.card.preset.sub")
         case .autoPresets: return hubT("root.card.auto.sub")
         }
@@ -221,6 +225,7 @@ private extension AIHub.Feature {
         case .settingsAudit: return "checkmark.shield.fill"
         case .hypoForensics: return "text.magnifyingglass"
         case .doctorReport: return "doc.text.fill"
+        case .deviceHealth: return "sensor.tag.radiowaves.forward.fill"
         case .presetDesigner: return "slider.horizontal.3"
         case .autoPresets: return "figure.walk.motion"
         }
@@ -235,6 +240,7 @@ private extension AIHub.Feature {
         case .settingsAudit: return .green
         case .hypoForensics: return .red
         case .doctorReport: return .cyan
+        case .deviceHealth: return .mint
         case .presetDesigner: return .pink
         case .autoPresets: return .teal
         }
@@ -246,6 +252,7 @@ private extension AIHub.Feature {
     var usesAI: Bool {
         switch self {
         case .chat,
+             .deviceHealth,
              .doctorReport,
              .hypoForensics,
              .mealSim,

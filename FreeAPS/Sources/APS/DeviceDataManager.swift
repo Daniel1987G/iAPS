@@ -647,6 +647,10 @@ extension BaseDeviceDataManager: PumpManagerDelegate {
 
         if let startTime = KnownPlugins.pumpActivationDate(pumpManager) {
             storage.save(startTime, as: OpenAPS.Monitor.podAge)
+            // AI-Hub Hardware-Check: Patch-/Pod-Wechsel lückenlos mitschreiben
+            // (neues Aktivierungsdatum = exakter Wechsel-Zeitpunkt) und ggf.
+            // an die Setzstellen-Rotation erinnern. Dedupliziert intern.
+            AIHubDeviceHealth.registerPatchActivation(startTime, storage: storage)
         }
 
         pumpManagerStatus.value = status
