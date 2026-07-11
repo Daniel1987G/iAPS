@@ -124,9 +124,10 @@ struct QuickPickBolusesView: View {
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(formatted)
-                    .font(.title2.bold())
+                    .font(.title3.bold())
+                    .minimumScaleFactor(0.8)
                 Text(hubT("qb.unit"))
-                    .font(.title2)
+                    .font(.title3)
                     .foregroundStyle(isSelected ? .white.opacity(0.85) : .secondary)
             }
             .padding(.vertical, 12)

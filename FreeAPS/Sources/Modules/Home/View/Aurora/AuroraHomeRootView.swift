@@ -830,8 +830,8 @@ extension Home {
                     // Inhaltsgroß statt volle Breite; der umschließende VStack
                     // zentriert die Pille dadurch automatisch.
                     .fixedSize(horizontal: true, vertical: false)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 11)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
                     .auroraGlassPill()
                 }
                 .buttonStyle(.plain)
