@@ -38,3 +38,12 @@
 	path = OmnipodKit
 	url = https://github.com/Artificial-Pancreas/OmnipodKit
 	branch = dev
+[submodule "LibreLoop"]
+	path = LibreLoop
+	url = https://github.com/trioneer-dev/LibreLoop.git
+[submodule "LibreCRKit"]
+	path = LibreCRKit
+	url = https://github.com/loopandlearn/LibreCRKit.git
+[submodule "LoopAlgorithm"]
+	path = LoopAlgorithm
+	url = https://github.com/loopandlearn/LoopAlgorithm.git

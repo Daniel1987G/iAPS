@@ -197,6 +197,34 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "LoopAlgorithm"
+               BuildableName = "LoopAlgorithm"
+               BlueprintName = "LoopAlgorithm"
+               ReferencedContainer = "container:LoopAlgorithm">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B2EABFEC645A3969B0B548ED"
+               BuildableName = "LibreLoopPlugin.loopplugin"
+               BlueprintName = "LibreLoopPlugin"
+               ReferencedContainer = "container:LibreLoop/LibreLoop.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "B40BF25D23ABD47400A43CEE"
                BuildableName = "LibreTransmitterPlugin.loopplugin"
                BlueprintName = "LibreTransmitterPlugin"
