@@ -17,6 +17,9 @@
       location = "group:G7SensorKit/G7SensorKit.xcodeproj">
    </FileRef>
    <FileRef
+      location = "group:AccuChekKit/AccuChekKit.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:dexcom-share-client-swift/ShareClient.xcodeproj">
    </FileRef>
    <FileRef
