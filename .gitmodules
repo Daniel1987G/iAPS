@@ -40,13 +40,13 @@
 	branch = dev
 [submodule "LibreLoop"]
 	path = LibreLoop
-	url = https://github.com/trioneer-dev/LibreLoop.git
+	url = https://github.com/Rig22/LibreLoop.git
 [submodule "LibreCRKit"]
 	path = LibreCRKit
-	url = https://github.com/loopandlearn/LibreCRKit.git
+	url = https://github.com/Rig22/LibreCRKit.git
 [submodule "LoopAlgorithm"]
 	path = LoopAlgorithm
-	url = https://github.com/loopandlearn/LoopAlgorithm.git
+	url = https://github.com/Rig22/LoopAlgorithm.git
 [submodule "EversenseKit"]
 	path = EversenseKit
 	url = https://github.com/bastiaanv/EversenseKit
