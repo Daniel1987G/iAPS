@@ -1,6 +1,24 @@
 {
-  "originHash" : "57a79948c81b55e3b3079fe981a9314f78ae01e215e92df7e7bc105f868862b4",
+  "originHash" : "31aa02e0a8ba4f8d185e0d2858c368232f5995a7803d0c439c75a8e3ea623462",
   "pins" : [
+    {
+      "identity" : "asn1",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/leif-ibsen/ASN1",
+      "state" : {
+        "revision" : "e38d1b8b43d8b53ffadde9836f34289176bb7a0c",
+        "version" : "2.7.0"
+      }
+    },
+    {
+      "identity" : "bigint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/leif-ibsen/BigInt",
+      "state" : {
+        "revision" : "7c7b1be2f6714ce03833879b0aab4b20293c0207",
+        "version" : "1.24.0"
+      }
+    },
     {
       "identity" : "cryptoswift",
       "kind" : "remoteSourceControl",
@@ -49,7 +67,7 @@
     {
       "identity" : "swiftcharts",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ivanschuetz/SwiftCharts",
+      "location" : "https://github.com/ivanschuetz/SwiftCharts.git",
       "state" : {
         "branch" : "master",
         "revision" : "c354c1945bb35a1f01b665b22474f6db28cba4a2"
