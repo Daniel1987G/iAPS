@@ -50,3 +50,6 @@
 [submodule "EversenseKit"]
 	path = EversenseKit
 	url = https://github.com/bastiaanv/EversenseKit
+[submodule "AccuChekKit"]
+	path = AccuChekKit
+	url = https://github.com/bastiaanv/AccuChekKit

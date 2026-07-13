@@ -239,6 +239,20 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3E5A3B962F42246100D498DB"
+               BuildableName = "AccuChekKitPlugin.loopplugin"
+               BlueprintName = "AccuChekKitPlugin"
+               ReferencedContainer = "container:AccuChekKit/AccuChekKit.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "B40BF25D23ABD47400A43CEE"
                BuildableName = "LibreTransmitterPlugin.loopplugin"
                BlueprintName = "LibreTransmitterPlugin"
