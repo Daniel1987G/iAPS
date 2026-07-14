@@ -122,19 +122,19 @@ struct QuickPickBolusesView: View {
         return Button {
             selectedAmount = amount
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
+            (
                 Text(formatted)
-                    .font(.title3.bold())
-                    .minimumScaleFactor(0.8)
-                Text(hubT("qb.unit"))
-                    .font(.title3)
-                    .foregroundStyle(isSelected ? .white.opacity(0.85) : .secondary)
-            }
+                    .font(.title3.weight(.bold))
+                    +
+                    Text(" " + hubT("qb.unit"))
+                    .font(.callout.weight(.medium))
+            )
+            .foregroundStyle(isSelected ? .white : .primary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
             .padding(.vertical, 12)
-            .padding(.horizontal, 24)
             .frame(maxWidth: .infinity, minHeight: 44)
             .background(isSelected ? Color.accentColor : Color(.secondarySystemFill))
-            .foregroundStyle(isSelected ? .white : .primary)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
                 if isSelected {
