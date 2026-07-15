@@ -49,7 +49,7 @@
 	url = https://github.com/Rig22/LoopAlgorithm.git
 [submodule "EversenseKit"]
 	path = EversenseKit
-	url = https://github.com/bastiaanv/EversenseKit
+	url = https://github.com/Artificial-Pancreas/EversenseKit
 [submodule "AccuChekKit"]
 	path = AccuChekKit
 	url = https://github.com/Rig22/AccuChekKit
