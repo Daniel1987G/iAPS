@@ -62,6 +62,8 @@ final class BaseBackupService: BackupService, Injectable {
         let overridePresets = PresetsBackup.collectOverridePresets()
         let mealPresets = PresetsBackup.collectMealPresets()
         let mealImages = PresetsBackup.collectMealImages()
+        // API keys ride the same opt-in as the Nightscout credentials.
+        let userDefaults = UserDefaultsBackup.collect(includeSecrets: includingNightscoutCredentials)
 
         return BackupBundle(
             schemaVersion: BackupBundle.currentSchemaVersion,
@@ -74,7 +76,8 @@ final class BaseBackupService: BackupService, Injectable {
             nightscout: nightscout,
             overridePresets: overridePresets.isEmpty ? nil : overridePresets,
             mealPresets: mealPresets.isEmpty ? nil : mealPresets,
-            mealImages: mealImages.isEmpty ? nil : mealImages
+            mealImages: mealImages.isEmpty ? nil : mealImages,
+            userDefaults: userDefaults.isEmpty ? nil : userDefaults
         )
     }
 
@@ -132,6 +135,11 @@ final class BaseBackupService: BackupService, Injectable {
         if let mealImages = bundle.mealImages {
             PresetsBackup.restoreMealImages(mealImages)
             NSLog("[Backup] restored \(mealImages.count) meal images")
+        }
+
+        if let userDefaults = bundle.userDefaults {
+            let count = UserDefaultsBackup.restore(userDefaults, includeSecrets: restoreNightscoutCredentials)
+            NSLog("[Backup] restored \(count) userDefaults keys")
         }
 
         NSLog(
@@ -225,6 +233,12 @@ final class BaseBackupService: BackupService, Injectable {
             if let typed = [PumpHistoryEvent](from: raw) {
                 storage.save(typed, as: path)
                 return "[PumpHistoryEvent]"
+            }
+        case AIHubDeviceHealth.patchLogFile,
+             AIHubDeviceHealth.sensorLogFile:
+            if let typed = [AIHubDeviceHealth.PatchEvent](from: raw) {
+                storage.save(typed, as: path)
+                return "[AIHubDeviceHealth.PatchEvent]"
             }
         default:
             break

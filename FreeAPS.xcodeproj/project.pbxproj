@@ -455,6 +455,7 @@
 		BACCAFE0000000000BAC0017 /* AutoBackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACCAFE0000000000BAC0016 /* AutoBackupService.swift */; };
 		BACCAFE0000000000BAC0019 /* BackupPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACCAFE0000000000BAC0018 /* BackupPresets.swift */; };
 		BACCAFE0000000000BAC001B /* PresetsBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACCAFE0000000000BAC001A /* PresetsBackup.swift */; };
+		BACCAFE0000000000BAC001D /* UserDefaultsBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACCAFE0000000000BAC001C /* UserDefaultsBackup.swift */; };
 		BD2B464E0745FBE7B79913F4 /* NightscoutConfigProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF768BD6264FF7D71D66767 /* NightscoutConfigProvider.swift */; };
 		BD2FF1A02AE29D43005D1C5D /* CheckboxToggleStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD2FF19F2AE29D43005D1C5D /* CheckboxToggleStyle.swift */; };
 		BD7DA9A52AE06DFC00601B20 /* BolusCalculatorConfigDataFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD7DA9A42AE06DFC00601B20 /* BolusCalculatorConfigDataFlow.swift */; };
@@ -1251,6 +1252,7 @@
 		BACCAFE0000000000BAC0016 /* AutoBackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoBackupService.swift; sourceTree = "<group>"; };
 		BACCAFE0000000000BAC0018 /* BackupPresets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupPresets.swift; sourceTree = "<group>"; };
 		BACCAFE0000000000BAC001A /* PresetsBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetsBackup.swift; sourceTree = "<group>"; };
+		BACCAFE0000000000BAC001C /* UserDefaultsBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsBackup.swift; sourceTree = "<group>"; };
 		BD2FF19F2AE29D43005D1C5D /* CheckboxToggleStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckboxToggleStyle.swift; sourceTree = "<group>"; };
 		BD7DA9A42AE06DFC00601B20 /* BolusCalculatorConfigDataFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusCalculatorConfigDataFlow.swift; sourceTree = "<group>"; };
 		BD7DA9A62AE06E2B00601B20 /* BolusCalculatorConfigProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusCalculatorConfigProvider.swift; sourceTree = "<group>"; };
@@ -3071,6 +3073,7 @@
 				BACCAFE0000000000BAC0014 /* EarlyBackupRestore.swift */,
 				BACCAFE0000000000BAC0016 /* AutoBackupService.swift */,
 				BACCAFE0000000000BAC001A /* PresetsBackup.swift */,
+				BACCAFE0000000000BAC001C /* UserDefaultsBackup.swift */,
 			);
 			path = Backup;
 			sourceTree = "<group>";
@@ -4358,6 +4361,7 @@
 				BACCAFE0000000000BAC0017 /* AutoBackupService.swift in Sources */,
 				BACCAFE0000000000BAC0019 /* BackupPresets.swift in Sources */,
 				BACCAFE0000000000BAC001B /* PresetsBackup.swift in Sources */,
+				BACCAFE0000000000BAC001D /* UserDefaultsBackup.swift in Sources */,
 				AF726E72F41ADAB80FAC499E /* TidepoolManager.swift in Sources */,
 				5D632A0037E4D6C20E75126A /* ServiceExtensions.swift in Sources */,
 				8C82BA7741724B1B8CFC22DF /* BloodGlucose+Tidepool.swift in Sources */,

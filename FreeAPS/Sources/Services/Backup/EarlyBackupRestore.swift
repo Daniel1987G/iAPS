@@ -131,6 +131,17 @@ enum EarlyBackupRestore {
             NSLog("[Backup] early restore: \(mealImages.count) meal images restored")
         }
 
+        if let userDefaults = bundle.userDefaults {
+            // Secrets follow the same opt-in the bundle recorded for the
+            // Nightscout credentials. Safe this early: UserDefaults needs no
+            // service, and every consumer reads it after this returns.
+            let count = UserDefaultsBackup.restore(
+                userDefaults,
+                includeSecrets: bundle.includesNightscoutCredentials
+            )
+            NSLog("[Backup] early restore: \(count) userDefaults keys restored")
+        }
+
         NSLog("[Backup] === early restore done — \(restoredCount) restored, \(skippedCount) skipped ===")
     }
 
@@ -200,6 +211,11 @@ enum EarlyBackupRestore {
         case OpenAPS.Monitor.manualBolusHistory:
             if let typed = [PumpHistoryEvent](from: raw), saveTyped(typed, as: path) {
                 return "[PumpHistoryEvent]"
+            }
+        case AIHubDeviceHealth.patchLogFile,
+             AIHubDeviceHealth.sensorLogFile:
+            if let typed = [AIHubDeviceHealth.PatchEvent](from: raw), saveTyped(typed, as: path) {
+                return "[AIHubDeviceHealth.PatchEvent]"
             }
         default:
             break

@@ -40,6 +40,13 @@ struct BackupBundle: Codable, Sendable {
     /// re-download on demand after restore.
     var mealImages: [String: Data]?
 
+    /// UserDefaults-backed configuration (AutoPresets, AI-Hub settings,
+    /// site-rotation selections, food-search preferences — see
+    /// `UserDefaultsBackup.canonicalKeys`). API keys are only present when
+    /// the user opted in via `includesNightscoutCredentials`. Optional so
+    /// older bundles still decode cleanly.
+    var userDefaults: [String: JSONValue]?
+
     struct NightscoutCredentials: Codable, Sendable {
         var url: String?
         var secret: String?
@@ -73,7 +80,12 @@ extension BackupBundle {
         // learning. Independent of the settings/profile files above, so it is
         // appended last; unlike pumpHistory it survives a reinstall and must
         // be carried across in the backup.
-        OpenAPS.Monitor.manualBolusHistory
+        OpenAPS.Monitor.manualBolusHistory,
+        // Hardware-Check: patch/sensor change history with the user's
+        // per-change site entries. Long-term series that only grows on-device
+        // — without the backup it would be gone after a reinstall.
+        AIHubDeviceHealth.patchLogFile,
+        AIHubDeviceHealth.sensorLogFile
     ]
 
     /// Suggested filename for a backup taken at the given moment.
