@@ -109,7 +109,7 @@ enum UserDefaultsBackup {
     /// Write the bundled values back. Only canonical keys are considered;
     /// anything else in the dictionary is ignored. Returns the number of
     /// keys restored.
-    @discardableResult  static func restore(_ values: [String: JSONValue], includeSecrets: Bool) -> Int {
+    @discardableResult static func restore(_ values: [String: JSONValue], includeSecrets: Bool) -> Int {
         var restored = 0
         let keys = includeSecrets ? canonicalKeys + secretKeys : canonicalKeys
         let defaults = UserDefaults.standard
