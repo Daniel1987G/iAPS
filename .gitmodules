@@ -52,4 +52,4 @@
 	url = https://github.com/Artificial-Pancreas/EversenseKit
 [submodule "AccuChekKit"]
 	path = AccuChekKit
-	url = https://github.com/Rig22/AccuChekKit
+	url = https://github.com/bastiaanv/AccuChekKit
