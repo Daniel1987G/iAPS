@@ -13,7 +13,7 @@ on:
   push:
   
 env:  
-  UPSTREAM_REPO: Artificial-Pancreas/iAPS
+  UPSTREAM_REPO: Rig22/iAPS
   UPSTREAM_BRANCH: ${{ github.ref_name }} # branch on upstream repository to sync from (replace with specific branch name if needed)
   TARGET_BRANCH: ${{ github.ref_name }} # target branch on fork to be kept in sync, and target branch on upstream to be kept alive (replace with specific branch name if needed)
   ALIVE_BRANCH: alive
@@ -104,7 +104,7 @@ jobs:
       
       - name: Sync upstream changes
         if: | # do not run the upstream sync action on the upstream repository
-          vars.SCHEDULED_SYNC == 'true' && github.repository_owner != 'Artificial-Pancreas'
+          vars.SCHEDULED_SYNC == 'true' && github.repository_owner != 'Rig22'
         id: sync
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
         with:
